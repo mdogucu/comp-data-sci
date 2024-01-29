@@ -1,0 +1,299 @@
+---
+title: "Data Cleaning - All Reviews"
+format: html
+editor: source
+---
+
+## Cleaning
+
+```{r}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(here))
+```
+
+### Read files files from 04/04 merged_full
+
+The documents we did not keep need from the preliminary analysis need to be collected.
+
+```{r}
+prelim_reviews_og <- read_csv(
+  here("data", "04-preliminary-analysis", "04_merged_reviews", "merged_full.csv"),
+  show_col_types = FALSE, 
+  col_types = cols(.default = col_character(), keep = col_logical())
+)
+
+prelim_docs_not_kept <- prelim_reviews_og %>% 
+  filter(keep == FALSE) %>% 
+  mutate(prelim_review = TRUE)
+```
+
+### Read files from 05/02
+
+We also need all of the documents that made it past the preliminary analysis
+
+```{r}
+in_depth_folder_path <- here("data", "05-in-depth-analysis", "02-combined-reviews")
+csv_names <- list.files(in_depth_folder_path)
+combined_csv_paths <- paste0(in_depth_folder_path, "/", csv_names)
+
+in_depth_reviews_og <- read_csv(
+  combined_csv_paths[1], 
+  show_col_types = FALSE, 
+  col_types = cols(.default = col_character(), keep = col_logical())
+)
+
+for(path in combined_csv_paths[-1]) {
+  in_depth_reviews_og <- bind_rows(
+    in_depth_reviews_og,
+    read_csv(
+      path, 
+      show_col_types = FALSE, 
+      col_types = cols(.default = col_character(), keep = col_logical())
+    )
+  )
+}
+
+in_depth_reviews <- in_depth_reviews_og %>% 
+  mutate(prelim_review = FALSE)
+```
+
+### Merge these files
+
+We need to merge both the preliminary not kept and in-depth analysis documents.
+These data frames will not have the same columns.
+The column `document_type` should be dropped because we changed replaced this with `new_doc_type` in the in-depth reviews.
+
+```{r}
+all_reviews_og <- full_join(
+  prelim_docs_not_kept, 
+  in_depth_reviews,
+  by = join_by(
+    document_title, doi, document_link, authors, publication_year, abstract, database, open_access, reviewer_1, reviewer_2, keep, why_not_keep, prelim_review
+  )
+) 
+```
+
+### Clean them
+
+For all docs with `keep = FALSE` set the following values to NA: `open_access`, `new_doc_type`, `journal`, `conference`, `book`, `affiliation_country`, `content_area`, `research_question`, `data_collection_type`, `main_field`, `big_pic_notes`, `interesting_facts`, `keywords`
+
+```{r}
+all_reviews_kept <- all_reviews_og %>% 
+  filter(keep == TRUE)
+
+all_reviews_not_kept <- all_reviews_og %>% 
+  filter(keep == FALSE) %>% 
+  mutate(
+    open_access = NA,
+    new_doc_type = NA,
+    journal = NA,
+    conference = NA,
+    book = NA,
+    affiliation_country = NA,
+    content_area = NA,
+    research_question = NA,
+    data_collection_type = NA,
+    main_field = NA,
+    big_pic_notes = NA,
+    interesting_facts = NA,
+    keywords = NA,
+  )
+
+all_reviews <- bind_rows(all_reviews_kept, all_reviews_not_kept)
+```
+
+Two documents dropped in preliminary analysis were missing publication year.
+The corrections were discussed on GitHub in Issue #45
+
+```{r}
+doc1 <- which(all_reviews$doi == "10.3934/fods.2021035")
+all_reviews$publication_year[doc1] <- "2023"
+
+doc2 <- which(all_reviews$doi == "10.3934/fods.2021032")
+all_reviews$publication_year[doc2] <- "2023"
+```
+
+One document was published online in 2017, but published in a conference in 2016, and according to our README in data folder 05 we go by conference year. 
+
+```{r}
+doc_wrong_year3 <- which(all_reviews$our_id == "Wiktorski_2017_quantitative")
+all_reviews$publication_year[doc_wrong_year3] <- "2016"
+```
+
+
+One document was categorized as a conference article but it is actually a journal article
+
+```{r}
+doc3 <- which(all_reviews$our_id == "Ceccucci_2014_effectiveness")
+all_reviews$journal[doc3] <- TRUE
+all_reviews$conference[doc3] <- FALSE
+```
+
+
+Duplicates named differently for `why_not_keep`, so replace:
+
+-   "duplicate" and "duplicated paper" with "duplicate paper"
+-   "mooc" and "moocs" with "Massive Open Online Course"
+-   "not about data science education" and "not data science education" with "not on data science education"
+-   "not about data science education (about using data science to analyze education-related data)" with "not on data science education (about using data science to analyze education-related data)"
+
+```{r clean-why_not_keep}
+all_reviews <- all_reviews %>% 
+  select(-c(document_type)) %>% 
+  mutate(why_not_keep = str_to_lower(why_not_keep)) %>%
+  mutate(why_not_keep = case_when(
+    why_not_keep %in% c("duplicate", "duplicated paper") ~ "duplicate paper",
+    why_not_keep %in% c("mooc", "moocs") ~ "Massive Open Online Course",
+    why_not_keep %in% c("not about data science education", "not data science education") ~ "not on data science education",
+    why_not_keep == "not about data science education (about using data science to analyze education-related data)" ~ "not on data science education (about using data science to analyze education-related data)",
+    .default = why_not_keep
+  )) 
+```
+
+Invalid country name is `affiliation_country`: replace "United States, United States" with "United States of America, United States of America".
+
+```{r clean-affiliation_country}
+all_reviews <- all_reviews %>% 
+  mutate(affiliation_country = case_when(
+    affiliation_country == "United States, United States" ~ "United States of America, United States of America",
+    affiliation_country == "Netherlands, Spain, England, Norway" ~ "Netherlands, Spain, United Kingdom, Norway",
+    .default = affiliation_country
+  ))
+```
+
+For docs with two content areas make sure they are listed alphabetically.
+
+Invalid entry in content_area, replace: "current state of data science education" with "review of current state of data science education"
+
+```{r clean-content_area}
+listed_content_areas <- str_split(all_reviews$content_area, pattern = " and ")
+sorted_listed_content_areas <- lapply(listed_content_areas, sort, na.last = TRUE)
+rearranged_content_areas <- unlist(
+  lapply(sorted_listed_content_areas, str_c, collapse = " and ")
+)
+
+all_reviews <- all_reviews %>% 
+  mutate(content_area = rearranged_content_areas) %>% 
+  mutate(content_area = if_else(
+    content_area == "current state of data science education", 
+    true = "review of current state of data science education",
+    false = content_area
+  ))
+```
+
+Duplicates names differently in `data_collection_type`, replace: "quantitative" with "quant" (also fix the single row with NA `data_collection_type` to "no data")
+
+```{r clean-data_collection_type}
+all_reviews <- all_reviews %>% 
+  mutate(data_collection_type = case_when(
+    data_collection_type == "quantitative" ~ "quant",
+    is.na(data_collection_type) & keep ~ "no data",
+    .default = data_collection_type
+  ))
+```
+
+Cleaned `main_field`, replace:
+
+-   "stat" and "statistics" with "statistics"
+-   "oceanography and interdisciplinary" with "oceanography"
+-   "informatics", "information science" with "informatics"
+
+```{r clean-main_field}
+all_reviews <- all_reviews %>% 
+  mutate(main_field = case_when(
+    main_field %in% c("stat", "statistics") ~ "statistics",
+    main_field == "oceanography and interdisciplinary" ~ "oceanography",
+    main_field %in% c("informatics", "information science") ~ "informatics",
+    .default = main_field
+  )) 
+```
+
+Clean `keywords` by making everything lowercase and alphabetically ordered, replace:
+
+-   "data science\neducation" with "data science education"
+-   "program accreditation\n" with "program accreditation"
+-   "\ndata science" with "data science"
+-   "instructional\ndesign" with "instructional design"
+-   ";" with "," (because of "Shapiro_2020_reshape") entry
+-   " ," with ","
+-   `NA` to "not_specified" for "Davis_2020_ethics" specifically
+
+```{r}
+listed_keywords <- str_split(all_reviews$keywords, pattern = ", ")
+sorted_listed_keywords <- lapply(listed_keywords, sort, na.last = TRUE)
+rearranged_keywords <- unlist(
+  lapply(sorted_listed_keywords, str_c, collapse = ", ")
+)
+
+all_reviews <- all_reviews %>% 
+  mutate(keywords = str_to_lower(rearranged_keywords)) %>% 
+  mutate(keywords = str_replace(
+    keywords,
+    pattern = "data science\neducation", 
+    replacement = "data science education"
+  )) %>% 
+  mutate(keywords = str_replace(
+    keywords,
+    pattern = "program accreditation\n", 
+    replacement = "program accreditation"
+  )) %>% 
+  mutate(keywords = str_replace(
+    keywords,
+    pattern = "\ndata science", 
+    replacement = "data science"
+  )) %>% 
+  mutate(keywords = str_replace(
+    keywords,
+    pattern = "instructional\ndesign", 
+    replacement = "instructional design"
+  )) %>% 
+  mutate(keywords = str_replace(
+    keywords,
+    pattern = ";", 
+    replacement = ","
+  )) %>%
+  mutate(keywords = str_replace(
+    keywords,
+    pattern = " ,", 
+    replacement = ","
+  ))
+  
+no_keywords_index <- which(all_reviews$our_id == "Davis_2020_ethics")
+
+all_reviews[no_keywords_index, "keywords"] <- "not specified"
+```
+
+The format of papers that were excluded for a reason other than their format (as reflected by their `why_not_keep` variable) was re-checked. If the format was found to be among the ones we decided to exclude (e.g. editorial material), the reason for their exclusion is changed to their format:
+
+```{r}
+
+posters_doi <- c("10.1145/2992154.2996788", 
+                 "10.1145/3488042.3490509",
+                 "10.1145/3488042.3489966")
+posters <- (!is.na(all_reviews$doi) & all_reviews$doi %in% posters_doi) 
+all_reviews$why_not_keep[posters] <- "poster"
+
+not_english_doi <- c("10.1541/ieejeiss.142.291")
+not_english <- (!is.na(all_reviews$doi) & all_reviews$doi %in% not_english_doi) 
+all_reviews$why_not_keep[not_english] <- "not in english"
+
+edit_material_doi <- c("10.1111/bjet.13258")
+edit_materials <- (!is.na(all_reviews$doi) & all_reviews$doi %in% edit_material_doi) 
+all_reviews$why_not_keep[edit_materials] <- "editorial material"
+
+# panel_doi <- c("10.1002/pra2.84")
+# panels <- (!is.na(all_reviews$doi) & all_reviews$doi %in% panel_doi) 
+# all_reviews$why_not_keep[panels] <- "panel"
+
+
+
+```
+
+
+
+
+## Write the final clean merged csv to in the data folder
+
+```{r}
+write_csv(all_reviews, here("data", "all_reviews.csv"))
+```

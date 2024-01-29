@@ -1,0 +1,202 @@
+---
+title: "Summary tables"
+format: 
+  pdf:
+    include-in-header: 
+      text: \pagenumbering{gobble}
+editor: visual
+execute:
+  echo: false
+---
+
+```{r}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(here))
+suppressPackageStartupMessages(library(knitr))
+suppressPackageStartupMessages(library(kableExtra))
+```
+
+```{r}
+all_reviews <- read_csv(
+  here("data", "all_reviews.csv"), 
+  show_col_types = FALSE
+)
+```
+
+```{r table-keep}
+data.frame(
+  n_docs_reviewed = nrow(all_reviews),
+  n_docs_kept = all_reviews |> 
+    filter(keep == TRUE) |> 
+    nrow(),
+  n_docs_excluded_prelim = all_reviews |> 
+    filter(keep == FALSE & prelim_review == TRUE) |> 
+    nrow(),
+  n_docs_excluded_in_depth = all_reviews |> 
+    filter(keep == FALSE & prelim_review == FALSE) |> 
+    nrow(),
+  n_docs_excluded_total = all_reviews |> 
+    filter(keep == FALSE) |> 
+    nrow()
+) |> 
+  kable(
+    booktabs = TRUE,
+    col.names = c("Reviewed", "Kept", "Preliminary", "In-depth", "Total")
+  ) |> 
+  kable_styling() |> 
+  add_header_above(c(" " = 2, "Excluded" = 3))
+```
+
+Note "complete conference proceedings" is not a reason for exclusion.
+These three docs were sorted through and none were kept.
+The true reasons for exclusion were "duplicates" and "presentations".
+Refer to issue #7 for details.
+
+```{r table-why-not-keep}
+all_reviews |> 
+  filter(keep == FALSE) |> 
+  arrange(why_not_keep) |> 
+  summarise(Total = n(), .by = "why_not_keep") |> 
+  kable(booktabs = TRUE, col.names = c("Why document was excluded", "Total")) |> 
+  kable_styling(full_width = TRUE, latex_options = "striped")
+```
+
+```{r table-new_doc_type}
+all_reviews |> 
+  filter(keep == TRUE) |> 
+  summarise(Total = n(), .by = "new_doc_type") |> 
+  arrange("new_doc_type") |> 
+  kable(booktabs = TRUE, col.names = c("Document type", "Total")) |> 
+  kable_styling(latex_options = "striped")
+```
+
+```{r table-publication_year}
+all_reviews |> 
+  filter(keep == TRUE) |> 
+  arrange(desc(publication_year)) |> 
+  mutate(journal_article = new_doc_type == "journal article") |> 
+  mutate(conference_article = new_doc_type == "conference article") |> 
+  mutate(magazine_article = new_doc_type == "magazine article") |>
+  mutate(book_chapter = new_doc_type == "book chapter") |>
+  summarise(
+    Total = n(), 
+    in_journal_article = sum(journal_article, na.rm = TRUE), 
+    in_conference_article = sum(conference_article, na.rm = TRUE),
+    in_magazine_article = sum(magazine_article, na.rm = TRUE),
+    in_book_chapter = sum(book_chapter, na.rm = TRUE),
+    .by = "publication_year"
+  ) |> 
+  arrange("new_doc_type") |> 
+  kable(
+    booktabs = TRUE,
+    col.names = c("Publication year", "Total", "Journal", "Conference", "Magazine", "Book")
+  ) |> 
+  kable_styling(latex_options = "striped") |> 
+  add_header_above(c(" " = 2, "Document type" = 4))
+```
+
+```{r table-affiliation_countries}
+affiliation_countries_tab <- all_reviews |> 
+  filter(keep == TRUE) |> 
+  pull(affiliation_country) |> 
+  str_split(pattern = ", ") |> 
+  unlist() |> 
+  table()
+
+data.frame(
+  country = names(affiliation_countries_tab),
+  n = as.numeric(affiliation_countries_tab)
+) |> 
+  arrange(country) |> 
+  kable(booktabs = TRUE, col.names = c("Country", "Total")) |> 
+  kable_styling(latex_options = "striped")
+```
+
+```{r table-content_area}
+all_reviews |> 
+  filter(keep == TRUE) |> 
+  arrange(content_area) |> 
+  mutate(research_question = as.logical(research_question)) |>
+  mutate(qual_data = data_collection_type == "qual") |> 
+  mutate(quant_data = data_collection_type == "quant") |> 
+  mutate(mixed_data = data_collection_type == "mixed") |>
+  summarise(
+    Total = n(), 
+    With_research_question = sum(research_question, na.rm = TRUE), 
+    With_qual_data = sum(qual_data, na.rm = TRUE), 
+    With_quant_data = sum(quant_data, na.rm = TRUE),
+    With_mixed_data = sum(mixed_data, na.rm = TRUE),
+    .by = "content_area"
+  ) |> 
+  kable(
+    booktabs = "TRUE",
+    col.names = c(
+      "Content area", 
+      "Total", 
+      "Research question",
+      "Qual",
+      "Quant",
+      "Mixed"
+    ),
+    caption = "Content area stratified by having research question(s) and data type."
+  ) |> 
+  kable_styling(latex_options = "striped") |> 
+  landscape() |> 
+  add_header_above(c(" " = 3, "Collected data" = 3))
+```
+
+```{r table-main_field}
+all_reviews |> 
+  filter(keep == TRUE) |> 
+  mutate(main_field = str_to_title(main_field)) |> 
+  arrange(main_field) |> 
+  mutate(research_question = as.logical(research_question)) |>
+  mutate(qual_data = data_collection_type == "qual") |> 
+  mutate(quant_data = data_collection_type == "quant") |> 
+  mutate(mixed_data = data_collection_type == "mixed") |>
+  mutate(any_data = data_collection_type %in% c("qual", "quant", "mixed")) |> 
+  summarise(
+    Total = n(), 
+    With_research_question = sum(research_question, na.rm = TRUE), 
+    With_any_data = sum(any_data, na.rm = TRUE),
+    With_qual_data = sum(qual_data, na.rm = TRUE), 
+    With_quant_data = sum(quant_data, na.rm = TRUE),
+    With_mixed_data = sum(mixed_data, na.rm = TRUE),
+    .by = "main_field"
+  ) |>
+  kable(
+    booktabs = "TRUE",
+    col.names = c(
+      "Main field", 
+      "Total", 
+      "Research question",
+      "Total ",
+      "Qual",
+      "Quant",
+      "Mixed"
+    ),
+    caption = "Main field stratified by having research question(s) and data type."
+  ) |> 
+  kable_styling(latex_options = "striped") |> 
+  add_header_above(c(" " = 3, "Collected data" = 4))
+```
+
+```{r table-keywords}
+all_keywords <- all_reviews |> 
+  filter(keep == TRUE) |> 
+  filter(keywords != "not specified") |> 
+  pull(keywords) |> 
+  paste(collapse = ", ") |> 
+  str_split(pattern = ", ") |> 
+  unlist()
+  
+janitor::tabyl(all_keywords) |> 
+  select(keywords = all_keywords, total = n) |>
+  arrange(desc(total)) |> 
+  filter(total >= 2) |> 
+  kable(
+    booktabs = "TRUE", 
+    caption = "All keywords with multiple instances"
+  ) |> 
+  kable_styling(latex_options = "striped") 
+```
