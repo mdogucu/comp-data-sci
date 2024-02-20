@@ -1,0 +1,57 @@
+---
+title: "Assigning two reviewers per article"
+author: "Sinem Demirci"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r warning = FALSE, message = FALSE}
+library(readr)
+library(tidyverse)
+joint_data <- read_csv(here::here("data/02-data-joining/joint_data.csv"))
+```
+
+We have `r nrow(joint_data)` articles in our file and we need two reviewers for each article.
+
+### Adding Reviewer 1 and Reviewer 2
+
+```{r}
+set.seed(1234)
+reviewers <- tibble(
+  reviewer_1 = sample(5, 1000, rep = TRUE),
+  reviewer_2 = sample(5, 1000, rep = TRUE)
+)
+reviewers <- reviewers %>% 
+  distinct(reviewer_1, reviewer_2) %>% 
+  filter(reviewer_1 != reviewer_2) %>% 
+  bind_rows(replicate(10, ., simplify = FALSE)) %>% 
+  slice(1:197) %>% 
+  cbind(joint_data, .) %>% 
+  add_column(keep = "",
+             why_not_keep = "")
+```
+
+### Writing CSV files for each reviewer
+
+```{r}
+catalina <- reviewers %>% 
+  filter(reviewer_1 == 1 | reviewer_2 == 1) %>% 
+  write_csv((here::here("data/04-preliminary-analysis/catalina.csv")))
+
+federica <- reviewers %>% 
+  filter(reviewer_1 == 2 | reviewer_2 == 2) %>% 
+  write_csv((here::here("data/04-preliminary-analysis/federica.csv")))
+
+sinem <- reviewers %>% 
+  filter(reviewer_1 == 3 | reviewer_2 == 3) %>% 
+  write_csv((here::here("data/04-preliminary-analysis/sinem.csv")))
+
+harry <- reviewers %>% 
+  filter(reviewer_1 == 4 | reviewer_2 == 4) %>% 
+  write_csv((here::here("data/04-preliminary-analysis/harry.csv")))
+
+mine <- reviewers %>% 
+  filter(reviewer_1 == 5 | reviewer_2 == 5) %>% 
+  write_csv((here::here("data/04-preliminary-analysis/mine.csv")))
+```
+
