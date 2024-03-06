@@ -1,0 +1,232 @@
+---
+title: "Supplementary Materials of \"Undergraduate data science education: Who has the microphone and what are they saying?\""
+format:
+  jasa-pdf:
+    keep-tex: true  
+    journal:
+      blinded: false
+  jasa-html: default
+date: last-modified
+author:
+  - name: Mine Dogucu
+    acknowledgements: | 
+      Dogucu has been supported by NSF IIS award #2123366.
+    affiliations:
+      - name: University of California, Irvine
+        department: Department of Statistics
+  - name: Sinem Demirci
+    acknowledgements: | 
+      Demirci has been supported by the Scientific and Technological Research Council of Türkiye.
+    affiliations:
+      - name: California Polytechnic State University
+        department: Statistics Department
+  - name: Harry Bendekgey
+    acknowledgements: | 
+      Bendekgey has been supported by the HPI Research Center in Machine Learning and Data Science at UC Irvine.
+    affiliations:
+      - name: University of California, Irvine
+        department: Department of Computer Science
+  - name: Federica Zoe Ricci
+    acknowledgements: | 
+      Ricci has been supported by the HPI Research Center in Machine Learning and Data Science at UC Irvine.
+    affiliations:
+      - name: University of California, Irvine
+        department: Department of Statistics
+  - name: Catalina M. Medina
+    acknowledgements: | 
+      Medina has been supported by NSF IIS award #2123366.
+    affiliations:
+      - name: University of California, Irvine
+        department: Department of Statistics
+abstract: |
+    This Supplementary Materials document includes: 1) summary of publication exclusion reasons; 2) country affiliations of publications authors; 3) main discipline stratified by having research question(s) and data type.
+---
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+library(tidyverse)
+library(here)
+library(knitr)
+library(kableExtra)
+
+all_reviews <- read_csv(
+  here("data", "all_reviews.csv"), 
+  show_col_types = FALSE
+)
+why_not_keep <- data.frame(sort(table(all_reviews$why_not_keep), dec=TRUE))
+
+excluded <- data.frame(
+  n_docs_reviewed = nrow(all_reviews),
+  n_docs_kept = all_reviews |> 
+    filter(keep == TRUE) |> 
+    nrow(),
+  n_docs_excluded_prelim = all_reviews |> 
+    filter(keep == FALSE & prelim_review == TRUE) |> 
+    nrow(),
+  n_docs_excluded_in_depth = all_reviews |> 
+    filter(keep == FALSE & prelim_review == FALSE) |> 
+    nrow(),
+  n_docs_excluded_total = all_reviews |> 
+    filter(keep == FALSE) |> 
+    nrow()
+) 
+```
+
+
+```{r aggregate-exclusion-reasons}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Give columns tidy names
+why_not_keep <- why_not_keep %>% 
+  rename(reason = Var1,
+         total = Freq)
+
+# Aggregate:
+# - not about data science education
+# - k-12
+# - not a journal/conference/magazine article or book chapter
+# - other non-undergraduate focused data science education (e.g. for practitioners)
+why_not_keep <- why_not_keep %>% 
+  mutate(
+    reason = case_when(
+      # Based on why_not_keep$reason[str_detect(why_not_keep$reason, "data science")]
+      str_detect(reason, "data science") |
+       reason == "ai assisted online tutoring system" |
+        reason == "methodology" ~ "Not about data science education", 
+     # Based on why_not_keep$reason[str_detect(why_not_keep$reason, "school")]
+     str_detect(reason, "school") | 
+       reason == "k-12" ~ 
+       "Data science education for K-12",
+     # Excluded based on format 
+     # Based on why_not_keep$reason[str_detect(why_not_keep$reason, "edit")]
+     reason %in% c("panel", "poster", 
+                   "complete conference proceedings", 
+                   "ad hoc organizers", "dissertation abstract", 
+                   "doctoral consortium abstract", "interview", 
+                   "meeting highlights", 
+                   "poster session summary with multiple posters",
+                   "presentation summary",
+                   "editorial material",
+                   "introduction to a journal's special issue") |
+       str_detect(reason, "edit") ~ 
+       "Format (not a journal/conference/magazine article or book chapter)",
+     # graduate
+     str_detect(reason, "graduate") ~ 
+       "Data science education for graduate students",
+    # on data science education, but not for k-12/undergraduate/graduate
+    reason %in% c("Massive Open Online Course", "citizen science",
+                  "museum visitors", "instructors",
+                  "practitioners", "practitioners and researchers" ,
+                  "prospective college students" ) ~ 
+      "Data science education for adults in non-academic programs*", 
+    reason == "not in english" ~ "Not in English",
+      .default = str_to_sentence(reason)
+    )
+  ) %>% 
+  group_by(reason) %>% 
+  summarize(total = sum(total)) %>% 
+  arrange(-total) 
+
+```
+
+
+
+```{r table-why-not-keep}
+#| label: tbl-exclusion
+#| tbl-cap: "Summary of Publication Exclusion Reasons"
+#| tbl-colwidths: [70,30]
+#| echo: false
+#| warning: false
+
+why_not_keep |> 
+  kable(
+    booktabs = "TRUE",
+    col.names = c(
+      "Reason for Exclusion", 
+      "Total"),
+      escape = TRUE
+  ) |> 
+  kableExtra::kable_styling(latex_options = "striped") |>
+   add_footnote("Examples of this category include: practitioners, citizen science, instructors.", notation = "symbol")
+
+```
+
+\newpage
+
+```{r}
+#| echo: false
+#| label: tbl-country-affiliation
+#| tbl-cap: "For each country below, we report the numbers of papers which included at least one affiliated author. We record the affiliations of authors' home institutions as reported in the publication, not the authors' nationalities."
+countries <- all_reviews$affiliation_country |>
+  strsplit(", ") |>
+  unlist() |>
+  unique() |>
+  na.omit()
+
+check.country <- function(x) sum(str_detect(all_reviews$affiliation_country, x), na.rm=TRUE)
+country.counts <- unlist(map(countries, check.country))
+country.table <- data.frame(country = countries, counts = country.counts) |> 
+  arrange(country) |> arrange(desc(counts))
+
+country.table <- data.frame(country1 = country.table['country'][c(1:12),], counts1 = country.table['counts'][c(1:12),],
+                            country2 = country.table['country'][c(13:24),], counts2 = country.table['counts'][c(13:24),])
+
+country.table |> 
+  kable(
+    booktabs = "TRUE",
+    col.names = c(
+      "Country", 
+      "# Articles",
+      "Country", 
+      "# Articles"
+    )
+  ) |> 
+  kableExtra::kable_styling(latex_options = "striped")
+```
+
+\newpage
+
+```{r}
+#| echo: false
+#| label: table-main_field
+#| tbl-cap: Number of articles with communicated research questions and with collected data by discipline.
+all_reviews |> 
+  filter(keep == TRUE) |> 
+  mutate(main_field = str_to_title(main_field)) |> 
+  arrange(main_field) |> 
+  mutate(research_question = as.logical(research_question)) |>
+  mutate(qual_data = data_collection_type == "qual") |> 
+  mutate(quant_data = data_collection_type == "quant") |> 
+  mutate(mixed_data = data_collection_type == "mixed") |>
+  mutate(any_data = data_collection_type %in% c("qual", "quant", "mixed")) |> 
+  summarise(
+    With_research_question = sum(research_question, na.rm = TRUE),
+    Without_research_question = sum(!research_question, na.rm = TRUE),
+    With_qual_data = sum(qual_data, na.rm = TRUE), 
+    With_quant_data = sum(quant_data, na.rm = TRUE),
+    With_mixed_data = sum(mixed_data, na.rm = TRUE),
+    With_any_data = sum(!any_data, na.rm = TRUE),
+    Total = n(),
+    .by = "main_field"
+  ) |>
+  kable(
+    booktabs = "TRUE",
+    col.names = c(
+      "Content Area",
+      "With",
+      "Without ",
+      "Qual",
+      "Quant",
+      "Mixed",
+      "None",
+      "Total"
+    )) |>
+  kable_styling(latex_options = "striped") |>
+  add_header_above(c(" " = 1, "Research Question" = 2, "Collected Data" = 4, " " = 1)) |> 
+  column_spec(1, width = "13em")
+```
+

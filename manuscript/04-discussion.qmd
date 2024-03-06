@@ -1,0 +1,157 @@
+---
+format: pdf
+editor: visual
+bibliography: references.bib
+---
+
+```{r}
+#| echo: false
+#| message: false
+library(tidyverse)
+library(here)
+library(knitr)
+
+all_reviews <- read_csv(
+  here("data", "all_reviews.csv"), 
+  show_col_types = FALSE
+)
+
+excluded <- data.frame(
+  n_docs_reviewed = nrow(all_reviews),
+  n_docs_kept = all_reviews |> 
+    filter(keep == TRUE) |> 
+    nrow(),
+  n_docs_excluded_prelim = all_reviews |> 
+    filter(keep == FALSE & prelim_review == TRUE) |> 
+    nrow(),
+  n_docs_excluded_in_depth = all_reviews |> 
+    filter(keep == FALSE & prelim_review == FALSE) |> 
+    nrow(),
+  n_docs_excluded_total = all_reviews |> 
+    filter(keep == FALSE) |> 
+    nrow(),
+  n_docs_excluded_format = all_reviews |> 
+    filter(keep == FALSE) |> 
+    filter(why_not_keep %in% c("panel",
+                               "complete conference proceedings",
+                               "not in english",
+                               "retracted",
+                               "poster session summary with multiple posters",
+                               "duplicate paper",
+                               "interview",
+                               "note from journal's editor",
+                               "poster",
+                               "dissertation abstract",
+                               "doctoral consortium abstract",
+                               "introduction to a journal's special issue",
+                               "letter to journal editor",
+                                "meeting highlights",
+                               "presentation summary")) |> 
+    nrow(),
+  n_docs_graduate = all_reviews |>
+    filter(why_not_keep %in% c("graduate",
+                               "postgraduate")) |> 
+    nrow(),
+  n_docs_k_12 = all_reviews |>
+    filter(why_not_keep == "k-12") |> 
+    nrow(),
+  n_docs_high_school = all_reviews |>
+    filter(why_not_keep == "high school") |> 
+    nrow(),
+  n_docs_mid_school = all_reviews |>
+    filter(why_not_keep == "middle school") |> 
+    nrow(),  
+  n_docs_mid_high_school = all_reviews |>
+    filter(why_not_keep == "middle school and high school") |> 
+    nrow(),   
+  n_docs_elem_school = all_reviews |>
+    filter(why_not_keep == "elementary school") |> 
+    nrow()    
+) 
+
+```
+
+Turning our attention to the synthesized knowledge gathered, this section examines the strengths and gaps in the undergraduate data science education literature.
+Building upon the findings detailed in @sec-results, we also extend comprehensive recommendations to both policymakers and the data science education community, aiming to enhance capacity building in undergraduate data science studies.
+
+Over the past eight years, a higher percentage of conference articles (57%) have been published compared to journal articles (38%).
+In analyzing the content areas of the publications, we note a consistent occurrence of at least one publication annually addressing (1) a call to action, (2) reviewing the current state of data science education, (3) program example, and (4) education technologies used in data science education.
+Education technology is the content area that is studied most by scholars.
+Among educational technologies to support learning data science, learning environments [e.g., @bornschlegl2016; @hoyt2018] are one of the popular ones.
+Ethics is also one of the recurring themes among the studies that we reviewed.
+
+The majority of published studies on undergraduate data science education are open access, marking a substantial strength in the field.
+The freely available information and scholars' insights regarding the status of undergraduate data science education not only contribute to overcoming barriers but also facilitate the dissemination and application of knowledge.
+Studies including multiple examples of data science programs and courses across various fields add another layer of strength to the undergraduate data science education literature.
+In addition to overall data science programs [e.g., @demchenko2019; @kakeshita2022], we have also seen data science education practices in different programs such as computer science education [@bilehassan2020], microbiology [@dill-mcfarland2021], and business [@miah2020].
+
+The course examples showcase a diverse array of strategies for incorporating data science concepts, ranging from introductory computing [@fisler2022], modern technologies course to computer science and engineering students [@rao2019], general education IT course [@haynes2019], medicine [@doudesis2022], to introduction to psychological statistics [@tucker2023].
+This broad spectrum in both program and course examples serves as compelling evidence, illustrating the intrinsic interdisciplinary nature of data science, and attracting the attention of scholars from diverse fields.
+
+### Knowledge Gaps in Undergraduate Data Science Education
+
+Knowledge gaps are areas or topics derived from the synthesis of existing body of literature [@cooper1998syn].
+Understanding these gaps is crucial because it adds a more structured and evidence-supported layer to our knowledge.
+In this section, we discuss the knowledge gaps in undergraduate data science education based on our research findings.
+
+**1. There is lack of empirical data:** One of the important functions of systematic literature reviews is to gain a deeper understanding and inform possible further quantitative meta-analysis topics that can be conducted in the field [@evans2001systematic; @liberati2009prisma].
+To facilitate this, we categorized the studies based on their content area, the existence of research questions, and the types of data collection.
+As stated earlier, `r all_reviews %>% filter(data_collection_type == "no data") %>% nrow()` studies out of `r excluded$n_docs_kept` did not collect data.
+Given the scopes of content areas such as calls to action, educational technology, and program examples coupled with the emergent nature of the field, the lack of empirical data is not a surprising finding.
+However, it also suggests that undergraduate data science education researchers have not yet begun to systematically collect empirical data to assess, for example, the effectiveness of educational technologies, programs, learning outcomes and/or other pedagogical approaches.
+This outcome underscores the insufficient accumulation of empirical data needed to propose a meta-analysis in undergraduate data science education.
+
+It is essential to clarify that our emphasis on lack of empirical data is not a promotion of empiricism over all other 'ways of knowing'.
+We acknowledge and appreciate alternative forms of knowledge, such as expert opinions [@fraenkel2012design], for their valuable contributions to data science education community's know-how.
+These forms of knowledge are important catalysts in guiding researchers towards areas that require systematic data collection.
+What we are highlighting is the disproportionately high percentage of studies lacking empirical data, which complicates the literature's potential for gaining a deeper understanding and identifying recurring patterns.
+
+**2. Reproducibility is one of the potential challenges in undergraduate data science education research:** Another identified knowledge gap relates to the reproducibility of certain studies.
+We speculate that the absence of critical information about research designs, such as the lack of research questions, participants' profiles and non-collection of data, may contribute to the reduced reproducibility of available studies.
+This makes it challenging to replicate or modify research, impeding the identification of recurring patterns.
+
+A contributing factor may be that a higher percentage of conference articles have been published compared to journal articles in undergraduate data science education.
+One could argue that word limits for conference articles are generally more restrictive compared to journal articles, imposing constraints that may impede the depth and comprehensiveness of research.
+This succinct nature of conference articles may inadvertently interfere with the comprehensive documentation necessary for the effective replication or modification of research, such as detailed presentation of methodologies, data collection processes, and nuanced discussions.
+
+Reproducibility is an important skill for teacher-scholars of data science both in their teaching and research [@dogucu2022].
+Considering that much of the published research in the literature are written by those who also teach data science, closing the reproducibility gap both in research and teaching is extremely important.
+One potential reason for this gap may also be the minimal training that most instructors receive in reproducibility [@horton2022].
+
+**3. Not all Data Science disciplines contribute equally to the overall body of knowledge:** Data science encompasses various domains, including statistics, mathematics, computer science, and other relevant domain knowledge, as defined by many interpretations [e.g., @cao2017; @hazzan2023].
+The importance of data science within specific disciplines is significant, and this is likely to expand in the future, encompassing areas like information schools, science, medicine, and engineering.
+
+The main field of the studies in this research suggests that multidisciplinary collaborations are a prevailing trend.
+Notably, computer science and data science emerge as the leading contributors to the literature.
+In contrast, fields such as statistics, mathematics, as well as other fields closely related to data science exhibit a limited presence in studies related to undergraduate data science education, as evident in Table 3 of Supplementary Materials.
+This result aligns with the study of @wiktorski2017, who reported that Mathematics and Statistics departments are not at the forefront of data science degree programs.
+This is perhaps the most important finding for the statistics community.
+These observations, combined with our findings, underscore the necessity for inclusion of these underrepresented fields to foster a comprehensive understanding of data science education.
+In essence, statistics and mathematics should be recognized as integral components of data science.
+
+### Recommendations
+
+Considering the findings and our arguments, we present three recommendations for the future of undergraduate data science education studies: two for policymakers and funding agencies, and one for institutions and scholars invested in data science.
+
+**Recommendation 1: Prioritize investments in empirical studies.** Not having sufficient empirical data is one of the knowledge gaps in undergraduate data science education.
+Accumulating empirical data is essential to be able to gain a sound understanding of data science education studies at a large scale.
+Hence, we recommend that policymakers and funding agencies prioritize investments in undergraduate data science studies dedicated to systematic data collection.
+This strategic approach will enable a comprehensive assessment of various aspects, including the effectiveness of educational technologies, program impact, learning outcomes, and other pedagogical approaches, ultimately contributing to a more informed and robust understanding of data science education.
+
+**Recommendation 2: Diversify research efforts to enrich the spectrum of studies.** Despite the diverse content areas within undergraduate data science education, ranging from program examples to extracurricular activities, there remains a need for increased research endeavors.
+In addition to calls to action and reviewing of the current state of data science education studies, the literature needs to see a growing number of studies focusing on capacity building in undergraduate level such as pedagogical approaches, class activities, extracurricular activities, and professional development of data science instructors.
+Embracing this multifaceted approach, coupled with an empirical data collection, will potentially contribute to a more comprehensive and evidence-based understanding of undergraduate data science education studies.
+
+**Recommendation 3: Encourage scholars in all data science fields to contribute more to publications.** The current trend suggests continuous multidisciplinary collaborations, with computer science and data science scholars emerging as the primary contributors to the literature.
+Despite the existence of other key departments offering data science courses at the undergraduate level, there is a noticeable gap in studies reflecting their perspectives in data science education.
+To address this gap, it is imperative for undergraduate data science education studies to incorporate the viewpoints of scholars from key fields like statistics, mathematics, and other disciplines intersecting with data science education practices.
+We posit that future endeavors in this direction will significantly enhance our understanding of the strengths and needs in undergraduate data science education.
+
+As a statistics community, we must take an active role in expanding the data science education research and other opportunities.
+For instance, despite having Guidelines for Assessment and Instruction in Statistics Education (GAISE) [-@GAISE2016] and Curriculum Guidelines for Undergraduate Programs in Statistical Science (CGUPSS) [-@asacurricula], ASA has not written any guidelines specific to data science education yet.
+However, ASA Board of Directors endorsed the Park City Math Institute report [@de2017curriculum] and have provided input on the criteria for data science program ABET accreditation [@liu2022].
+Further efforts by ASA similar to GAISE and CGUPSS or newer versions of these documents can also help distinguish statistics and data science programs and courses.
+
+In summary, the results of this study show that data science education is an "emerging field" with much more room for growth.
+Scientific studies are an integral part of reviewing existing practices as well as of improving higher education institutions' data science practices.
+Therefore, we should diversify our research efforts by investing in more empirical studies and fostering scholars from key fields in data science, especially in statistics.

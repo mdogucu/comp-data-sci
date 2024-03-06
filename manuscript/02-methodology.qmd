@@ -1,0 +1,161 @@
+---
+format: pdf
+editor: visual
+---
+
+```{=html}
+<!--
+### Systematic Literature Review
+
+Systematic literature review is generally used for informing evidence-based decisions in a field by compiling all empirical evidence that fits pre-determined inclusion and exclusion criteria (@evans2001systematic; @liberati2009prisma). 
+This approach was selected within the context of the study because we aimed to (1) specify current evidence and knowledge gaps in undergraduate data science education and (2) inform policymakers and data science educators/practitioners about the present status of data science education. 
+We chose to employ a qualitative research design to gain a deeper understanding and inform possible further quantitative meta-analysis topics that can be conducted in this field.
+
+-->
+```
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+library(tidyverse)
+library(here)
+library(knitr)
+
+all_reviews <- read_csv(
+  here("data", "all_reviews.csv"), 
+  show_col_types = FALSE
+)
+why_not_keep <- data.frame(sort(table(all_reviews$why_not_keep), dec=TRUE))
+
+excluded <- data.frame(
+  n_docs_reviewed = nrow(all_reviews),
+  n_docs_kept = all_reviews |> 
+    filter(keep == TRUE) |> 
+    nrow(),
+  n_docs_excluded_prelim = all_reviews |> 
+    filter(keep == FALSE & prelim_review == TRUE) |> 
+    nrow(),
+  n_docs_excluded_in_depth = all_reviews |> 
+    filter(keep == FALSE & prelim_review == FALSE) |> 
+    nrow(),
+  n_docs_excluded_total = all_reviews |> 
+    filter(keep == FALSE) |> 
+    nrow(),
+  n_docs_excluded_format = all_reviews |> 
+    filter(keep == FALSE) |> 
+    filter(why_not_keep %in% c("panel",
+                               "complete conference proceedings",
+                               "not in english",
+                               "retracted",
+                               "poster session summary with multiple posters",
+                               "duplicate paper",
+                               "interview",
+                               "note from journal's editor",
+                               "poster",
+                               "dissertation abstract",
+                               "doctoral consortium abstract",
+                               "introduction to a journal's special issue",
+                               "letter to journal editor",
+                                "meeting highlights",
+                               "presentation summary")) |> 
+    nrow(),
+  n_docs_graduate = all_reviews |>
+    filter(why_not_keep %in% c("graduate",
+                               "postgraduate")) |> 
+    nrow(),
+  n_docs_k_12 = all_reviews |>
+    filter(why_not_keep == "k-12") |> 
+    nrow(),
+  n_docs_high_school = all_reviews |>
+    filter(why_not_keep == "high school") |> 
+    nrow(),
+  n_docs_mid_school = all_reviews |>
+    filter(why_not_keep == "middle school") |> 
+    nrow(),  
+  n_docs_mid_high_school = all_reviews |>
+    filter(why_not_keep == "middle school and high school") |> 
+    nrow(),   
+  n_docs_elem_school = all_reviews |>
+    filter(why_not_keep == "elementary school") |> 
+    nrow()    
+) 
+
+
+```
+
+We opted to extract data from six databases that potentially include publications on data science education.
+These databases were (1) ERIC ProQuest, (2) IEEE Xplore, (3) PubMed, (4) ScienceDirect, (5) Scopus, and (6) Web of Science.
+After determining the databases, we searched documents including the specific keyword "data science education" (in quotes) in at least one of the following fields: title, abstract, keywords.
+We found a total of `r nrow(all_reviews)` publications that met our criteria.
+Using the databases, we extracted some variables including but not limited to author names, document title, and publication venue (e.g., journal title or conference title).
+We conducted the initial database search in December 2022, resulting in a pool of documents that were either published by that date or available online by that date but officially published in 2023.
+The data on all the publications and the associated codebook for the variables are publicly available in a GitHub repository at \github{}.
+
+We conducted data analysis in two stages: 1) preliminary data analysis and 2) in-depth data analysis.
+In the preliminary data analysis stage, we manually opened and read abstracts of publications.
+In the in-depth analysis stage, we read the full publications and recorded variables of potential interest.
+At both preliminary and in-depth analyses stages, each publication was assigned to two researchers randomly for independent review.
+The reviewer pairs discussed any discrepancies between their analysis decisions and tried to reach a consensus.
+In cases where conflicts persisted, the entire group of five researchers deliberated on the final decision.
+
+```{r}
+#| echo: false
+#| message: false
+```
+
+```{=html}
+<!--\textcolor{brown}{Alternative (to avoid the language of \`kept'): we excluded `r excluded$n_docs_excluded_prelim` publications during our preliminary analysis and `r excluded$n_docs_excluded_in_depth` during our in-depth analysis.
+Of those,} -->
+```
+Throughout these two stages of analysis, we excluded `r excluded$n_docs_excluded_format` publications due to formatting which included posters, panels, letters to journal editors, meeting highlights, publications not in English, duplicated publications, etc.
+We then looked at whether the remaining `r excluded$n_docs_reviewed - excluded$n_docs_excluded_format` publications were at the undergraduate level or not.
+For instance, if a publication focused on both K-12 and undergraduate levels, it was retained for in-depth analysis.
+Conversely, if a publication exclusively focused on K-12 settings, it was excluded.
+We excluded `r excluded$n_docs_graduate` publications that focused only on graduate level, `r excluded$n_docs_k_12` on K-12, `r excluded$n_docs_high_school` on high school, `r excluded$n_docs_mid_school` on middle school and `r excluded$n_docs_mid_high_school` on middle and high school.
+In total, we had `r excluded$n_docs_reviewed - excluded$n_docs_excluded_prelim` publications remaining by the end of the preliminary analysis and `r excluded$n_docs_kept` publications by the end of in-depth analysis.
+A full list of exclusion criteria, including but not limited to the formatting and level-of-education reasons provided above, is provided in Table 1 of Supplementary Materials.
+
+The data collection and analysis process was performed iteratively.
+From December 2022 to December 2023, data extracted from databases were corrected and the scope of the variables of interest was continuously revised and discussed.
+For instance, if a publication was not excluded based on the abstract in the preliminary stage, it could have been excluded at the in-depth analysis stage if it did not meet the inclusion criteria.
+Similarly, we initially extracted the open access status of publications from the databases, but when we realized many papers had multiple available versions we revised our definition of open access to include any paper accessible from a Google Scholar search.
+
+After excluding publications on format or relevance grounds, we were left with `r excluded$n_docs_kept` documents, which we analyzed in-depth by reading the publications fully.
+In addition to the variables extracted from databases (e.g. title of the publication, author names, etc.) we collected data on (1) affiliation country of researchers (2) open access status; (3) whether there were explicit research questions stated in the publication; (4) whether there was any reporting of data collection in the study and, if data were collected, the type of data (quantitative vs. qualitative); (5) content area of the publication (i.e., topic); and (6) main field and discipline of the publication.
+In addition, we noted big picture notes of each publication to look for patterns of main study areas of the publications.
+
+We acknowledge that, in this study, we did not reach the entire target population of undergraduate education research publications.
+There may be several other publications excluded from this study that did not meet our search criteria.
+For instance, an article that talks about a "data science class", "a data science activity", or "a data science curriculum" but does not use the phrase "data science education" would be excluded from this study.
+A further constraint is that our target population and sample included only publications written in English.
+The results we share and the findings we discuss in the next two sections only pertain to the specific search criteria we used.
+In brief, it can be considered that we have only examined *a sample* of undergraduate data science education research.
+
+```{=html}
+<!--
+
+
+-   *\[Is it possible that JSDSE does not emphasize keywords such as "data science education"?\]* \textcolor{purple}{Mine, can you elaborate again what you mean here?}
+
+
+    There may be other undergraduate data science education paper written in other languages.
+    
+    -->
+```
+```{=html}
+<!--
+
+The operational definitions of the variables we report can be found in the GitHub repo.
+
+### Validity and Reliability Evidences of the Study
+
+Several evidences of validity and reliability are collected in systematic literature review studies to ascertain whether a study measures what they intended to measure and to enhance the reproducibility of the research findings.
+Accordingly, we collected evidences to increase the validity and reliability of this study.
+
+In terms of dependability, we recorded our research steps such as how data were collected, how categories were derived and how we made decisions throughout the research study as suggested by @merriam2015qualitative. 
+In terms of ensuring transferability of this research, we provided a rich, _thick description_ (@merriam2015qualitative) of the data collection,data wrangling and data analysis procedures in the repository which has open access to every reader who wish to examine closely or reproducing the data analysis.
+We also ensured _maximum variation_ by including different undergraduate data science education studies conducted in different fields and/or included different content areas.
+This enabled us to explore the variations (@merriam2015qualitative) among the undergraduate data science education practices.
+
+-->
+```

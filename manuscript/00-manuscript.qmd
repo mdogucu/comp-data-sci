@@ -1,0 +1,92 @@
+---
+title: "Undergraduate data science education: Who has the microphone and what are they saying?"
+format:
+  jasa-pdf:
+    keep-tex: true  
+    journal:
+      blinded: false
+  jasa-html: default
+date: last-modified
+author:
+  - name: Mine Dogucu
+    acknowledgements: | 
+      Dogucu has been supported by NSF IIS award #2123366. Dogucu completed an earlier part of this work in Department of Statistical Science at University College London.
+    affiliations:
+      - name: University of California, Irvine
+        department: Department of Statistics
+  - name: Sinem Demirci
+    acknowledgements: | 
+      Demirci has been supported by the Scientific and Technological Research Council of Türkiye. Demirci completed an earlier part of this work in Department of Statistical Science at University College London.
+    affiliations: 
+      - name: California Polytechnic State University
+        department: Statistics Department
+  - name: Harry Bendekgey
+    acknowledgements: | 
+      Bendekgey has been supported by the HPI Research Center in Machine Learning and Data Science at UC Irvine.
+    affiliations:
+      - name: University of California, Irvine
+        department: Department of Computer Science
+  - name: Federica Zoe Ricci
+    acknowledgements: | 
+      Ricci has been supported by the HPI Research Center in Machine Learning and Data Science at UC Irvine.
+    affiliations:
+      - name: University of California, Irvine
+        department: Department of Statistics
+  - name: Catalina M. Medina
+    acknowledgements: | 
+      Medina has been supported by NSF IIS award #2123366.
+    affiliations:
+      - name: University of California, Irvine
+        department: Department of Statistics
+abstract: |
+  The presence of data science has been profound in the scientific community in almost every discipline. An important part of the data science education expansion has been at the undergraduate level. We conducted a systematic literature review to (1) specify current evidence and knowledge gaps in undergraduate data science education and (2) inform policymakers and data science educators/practitioners about the present status of data science education research. The majority of the publications in data science education that met our search criteria were available open-access. Our results indicate that data science education research lacks empirical data and reproducibility. Not all disciplines contribute equally to the field of data science education. Computer science and data science as a separate field emerge as the leading contributors to the literature. In contrast, fields such as statistics, mathematics, as well as other fields closely related to data science exhibit a limited presence in studies. We recommend that federal agencies and researchers 1) invest in empirical data science education research; 2) diversify research efforts to enrich the spectrum of types of studies; 3) encourage scholars in key data science fields that are currently underrepresented in the literature to contribute more to research and publications.
+  
+keywords:
+  - data science curriculum
+  - data science programs
+  - data science courses
+  - educational technology
+  - open access
+bibliography: references.bib  
+---
+
+```{=html}
+<!--Blind links manually
+\newcommand{\github}[1]{LINK HIDDEN FOR REVIEW}
+
+-->
+```
+\newcommand{\github}[1]{https://github.com/mdogucu/comp-data-sci}
+
+```{=html}
+<!--
+\textcolor{red}{Mine}
+\textcolor{purple}{Sinem}
+\textcolor{brown}{Harry}
+\textcolor{orange}{Federica}
+\textcolor{green}{Catalina}
+-->
+```
+## Introduction {#sec-introduction}
+
+```{r}
+#| child: 01-introduction.qmd
+```
+
+## Data Collection and Analysis {#sec-methodology}
+
+```{r}
+#| child: 02-methodology.qmd
+```
+
+## Results {#sec-results}
+
+```{r}
+#| child: 03-results.qmd
+```
+
+## Discussion {#sec-discussion}
+
+```{r}
+#| child: 04-discussion.qmd
+```

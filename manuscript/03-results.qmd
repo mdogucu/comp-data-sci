@@ -1,0 +1,241 @@
+---
+format: pdf
+editor: visual
+bibliography: references.bib
+---
+
+```{r}
+#| echo: false
+#| message: false
+library(tidyverse)
+library(here)
+library(knitr)
+library(kableExtra)
+library(english)
+```
+
+```{r}
+#| echo: false
+all_reviews <- read_csv(
+  here("data", "all_reviews.csv"), 
+  show_col_types = FALSE
+)
+```
+
+```{r}
+#| echo: false
+#| label: fig-publication_year
+#| fig-cap: "Undergraduate data science education publications ($n$ = 67) by year. Note that initial data retrieval was in December 2022."
+#| fig-width: 2
+#| fig-height: 2
+min_year <-filter(all_reviews, keep==TRUE)$publication_year %>% min()
+max_year <-filter(all_reviews, keep==TRUE)$publication_year %>% max()
+
+all_reviews |> 
+  filter(keep) |>
+  ggplot(aes(x=publication_year)) +
+  geom_bar(show.legend = FALSE) +
+  theme_minimal() +
+  labs(y = "Number of Papers", x = "Publication Year") + 
+  scale_x_continuous(breaks = seq(2015, 2023, by = 2)) +
+  theme(axis.text.x = element_text(angle = 90, 
+                                   vjust = 0.5, 
+                                   hjust=1))
+```
+
+@fig-publication_year shows the distribution of publication years for the `r all_reviews %>% filter(keep==TRUE) %>% nrow()` publications that we analyzed in-depth.
+The lone 2023 publication [@schmitt2023] was available online and obtained via our database search in December 2022, despite not being published until June 2023.
+The body of literature on undergraduate data science education we detected is very recent, with the oldest paper we analyzed published in `r min((all_reviews |> filter(keep))$publication_year)`, and the volume of work increasing monotonically in the following years.
+
+```{r}
+#| echo: false
+n_non_conf_journal <- all_reviews |>
+  filter(keep, 
+         new_doc_type != "conference article",
+         new_doc_type != "journal article") |>
+  nrow()
+
+n_magazine <- all_reviews |> 
+  filter(keep, new_doc_type == "magazine article") |> nrow()
+
+n_book <- nrow(all_reviews |> 
+                 filter(keep, 
+                        new_doc_type == "book chapter"))
+```
+
+Over these `r max_year - min_year` years, a majority of published work on undergraduate data science education has been freely available to the public: the breakdown of articles' open access status is shown in @tbl-open_access along with the document type.
+The vast majority of journal articles were open access, while conference publications showed a more even split.
+We reviewed only `r words(n_non_conf_journal)` publications which were neither journal nor conference articles, of which `r words(n_magazine)` were magazine articles [@hazzan2021; @bonnell2022] and `r words(n_book)` were book chapters [@manzella2022can; @RYAN201645].
+
+```{r}
+#| echo: false
+#| label: tbl-open_access
+#| tbl-cap: Document Type stratified by open access.
+all_reviews_open_access <- all_reviews |> 
+  filter(keep == TRUE) |> 
+  arrange(new_doc_type) |> 
+  mutate(new_doc_type = str_to_title(new_doc_type)) |>
+  mutate(open_access = as.logical(open_access)) |> 
+  mutate(not_open_access = !as.logical(open_access)) 
+
+all_reviews_open_access |> 
+  summarise(
+    open_access = sum(open_access, na.rm = TRUE), 
+    not_open_access = sum(not_open_access, na.rm = TRUE), 
+    Total = n(), 
+    .by = "new_doc_type"
+  ) |> 
+  arrange(desc(Total)) |> 
+  ungroup() |> rbind(c("Total", sum(as.logical(all_reviews$open_access),na.rm=TRUE), 
+                     sum(!as.logical(all_reviews$open_access),na.rm=TRUE), sum(all_reviews$keep))) |>
+  kable(
+    booktabs = "TRUE",
+    col.names = c(
+      "Document Type", 
+      "Open Access",
+      "Not Open Access",
+      "Total"
+    )
+  ) |> 
+  kable_styling(latex_options = "striped")
+```
+
+We also investigated the geographic breakdown of institutions that are contributing to this body of literature.
+A majority of the `r sum(all_reviews$keep)` publications analyzed included at least 1 author associated with an American institution, with European and Asian institutions providing the bulk of remaining analyzed literature.
+Table 2 of Supplementary Materials breaks down the analyzed publications by the institutional affiliations of their authors.
+The higher number of scholars' affiliations being in the United States may be at least partly attributed to the large size of the US relative to many other countries, as well as selection bias due to our search being restricted to English-written publications and to databases where US scholars might be more represented.
+
+```{r}
+#| echo: false
+#| message: false
+data_no_rq <- filter(all_reviews, 
+                     data_collection_type != "no data", 
+                     !research_question)
+
+rq_no_data <- filter(all_reviews, 
+                     data_collection_type == "no data", 
+                     research_question)
+
+n_quant <- nrow(all_reviews |>
+                  filter(data_collection_type == "quant"))
+n_qual <- nrow(all_reviews |>
+                 filter(data_collection_type == "qual"))
+n_mixed <- nrow(all_reviews |>
+                  filter(data_collection_type == "mixed"))
+
+tab <- table(all_reviews$main_field)
+```
+
+The majority of publications analyzed were either multidisciplinary (`r as.numeric(tab['multidisciplinary'])` of `r sum(all_reviews$keep)` articles), treated data science as the field of study or program itself, rather than a topic in another field (`r as.numeric(tab['data science'])` publications), or were about computer science departments or programs (`r as.numeric(tab['computer science'])` publications).
+The next most prevalent discipline was statistics, which `r words(as.numeric(tab['statistics']))` publications were focused on.
+
+Most publications (`r sum(all_reviews$keep) - nrow(data_no_rq) - nrow(rq_no_data)` of `r sum(all_reviews$keep)` reviewed) either posed research questions *and* collected data or did neither, although there were exceptions.
+`r Words(nrow(rq_no_data))` publications had research questions but no data collected [@vance2022; @pieterman-bos2023; @hagen2020; @robeva2020].
+On the other hand, `r words(nrow(data_no_rq))` publications collected data but did not pose a specific research question or study goal [@hicks2018; @rao2018; @liu2020].
+Of the `r n_quant + n_qual + n_mixed` publications that included collected data, `r n_quant`, `r n_qual`, and `r n_mixed` publications had qualitative, quantitative, and mixed data respectively.
+In Table 3 of Supplementary Materials, we provide a breakdown of data collection types and the presence of research questions by discipline.
+
+```{r table-research_question}
+#| echo: false
+#| label: tbl-rq
+#| tbl-cap: Number of articles with communicated research questions and with collected data by content area.  
+research.question <- all_reviews |> 
+  filter(!is.na(content_area)) |>
+  mutate(research_question = as.logical(research_question)) |>
+  mutate(qual_data = data_collection_type == "qual") |> 
+  mutate(quant_data = data_collection_type == "quant") |> 
+  mutate(mixed_data = data_collection_type == "mixed") |>
+  mutate(any_data = data_collection_type %in% c("qual", "quant", "mixed")) |> 
+  group_by(content_area) |> 
+  summarize(Total = n(),
+            With_research_question = sum(research_question, na.rm = TRUE),
+            Without_research_question = sum(!research_question, na.rm = TRUE),
+            With_any_data = sum(!any_data, na.rm = TRUE),
+            With_qual_data = sum(qual_data, na.rm = TRUE), 
+            With_quant_data = sum(quant_data, na.rm = TRUE),
+            With_mixed_data = sum(mixed_data, na.rm = TRUE))
+
+expanded.contents <- strsplit(as.character(research.question$content_area), " and ")
+
+lens <- map(expanded.contents, length)
+
+rq.df <- research.question[rep(seq_len(nrow(research.question)), lens), ]
+
+rq.df$content_area <- unlist(expanded.contents) 
+
+rq.df |>   mutate(content_area = str_to_title(content_area)) |> 
+  group_by(content_area) |>
+  summarize(With_research_question = sum(With_research_question), 
+            Without_research_question = sum(Without_research_question), 
+            With_qual_data = sum(With_qual_data), 
+            With_quant_data = sum(With_quant_data),
+            With_mixed_data = sum(With_mixed_data),
+            With_no_data = sum(With_any_data),
+            Total = sum(Total)) |>
+  arrange(desc(Total)) |>
+  kable(
+    booktabs = "TRUE",
+    col.names = c(
+      "Content Area", 
+      "With",
+      "Without ",
+      "Qual",
+      "Quant",
+      "Mixed",
+      "None",
+      "Total"
+    )) |> 
+  kable_styling(latex_options = "striped") |> 
+  add_header_above(c(" " = 1, "Research Question" = 2, "Collected data" = 4, " " = 1)) |> 
+  column_spec(1, width = "13em") |> 
+  footnote(general = "Some publications were classified as falling under multiple content areas.")
+```
+
+We also classified the publications based on their content area.
+We found publications that reviewed the current state of data science education and provided guidelines.
+We also encountered publications that provided program, course, class activity, and extra curricular activity examples.
+Some publications specifically focused on educational technology or a pedagogical approach.
+We also defined a content category "call to action".
+While many publications had a call to action with recommendations on improving data science education, we reserved the content category "call to action" for publications that solely made a call to action, without content falling into other content areas (e.g., education technology or course example).
+Some publications included more than one content area and in such cases we noted down all the content areas that the publication falls into.
+For each content area, @tbl-rq shows how many publications featured that content area in a descending order, had a research question and included qualitative, quantitative or mixed type of data.
+In the remainder of this section, we highlight some contributions from each content area.
+
+Similar to what we are doing in our study, many scholars wanted to understand the **current state of data science education**.
+Many of the studies conducted wanted to understand and evaluate data science programs [@wiktorski2016; @oliver2021; @song2016; @shao2021; @li2021; @raj2019] or curricula [@schmitt2023].
+@davis2020 specifically looked at the current state of ethics in undergraduate data science education and @ceccucci2015 considered data science education from a scientific literacy perspective.
+Also among these reviews were comparative studies: for instance @bilehassan2020's comparison of informatics and data science programs.
+Some studies also compared differences of data science approaches at country or regional levels such in Japan [@takemura2018] or in Middle Eastern countries [@zakaria2023].
+In understanding the current state of data science education, scholars also wanted to understand the data science practice.
+For instance, @belloum2019 developed semi-automated methods to determine the competencies needed in the job-market and @kross2019 focused on understanding the skills that data science practitioners who also teach data science in various settings pass on to their students.
+In addition to understanding data science education, scholars also provided **guidelines** for data science degrees [@blair2021].
+
+We found multiple data science **program examples**, including but not limited to general data science programs [e.g., @demchenko2017; @demchenko2019; @kakeshita2022].
+Some publications were about data science education in specific programs such as computer science education [@bilehassan2020], microbiology [@dill-mcfarland2021], information schools [@song2017; @hagen2020] and business [@miah2020].
+Less traditional programs were also featured, such as the Data Mine which takes on data science education in a residential community of students [@betz2020].
+
+The literature we read also included many **course examples** with some clever ways of including data science concepts in different courses.
+For instance, @fisler2022 suggest including data science and data structures in an introductory computing course, @rao2019 teach data science through use of education data in their engineering course on modern technologies, and @haynes2019 teach data science in a general education IT course.
+Some institutions developed data science courses for specific disciplines including information schools [@hagen2020] and medicine [@doudesis2022].
+Some scholars also describe courses that merge data science with philosophy of science [@pieterman-bos2023] or with humanities perspectives [@vance2022].
+Last but not least, data science educators also tried to provide real-life data science experiences through work-integrated learning [@bilgin2022], capstone projects [@allen2021] and entirely case-study based courses [@hicks2018].
+
+Similar to program examples and course examples provided in the literature, some publications focused on activity examples.
+Among **class activity examples**, @yamamoto2021 develop a programming exercise to bring higher-order tensor content to undergraduate level by using a 3-D puzzle.
+Another example is by @banadaki2022 who develop different activities that include applications of data science in Mechanical Engineering, Biomedical science, Quantum Physics, and Cybersecurity.
+In data science education, there is also room for learning outside the classroom as an **extra-curricular activity**.
+This can include data hackathons [@anslow2016].
+
+In terms of **education technology**, as much of data science education tackles with issues such as computing power, storage of large datasets, and sometimes automation, some of these publications focused on cloud-based data science platforms for teaching purposes [e.g., @demchenko2017].
+Many others focused on other tools such as online platforms, learning environments, and apps that support learning data science [e.g., @hoyt2018; @bornschlegl2016; @liu2020; @nair2020].
+
+Studies that focused on **pedagogical approaches** were also frequently encountered.
+These studies focused on various subtopics including team-based learning [e.g., @vance2022], project-based learning [e.g., @mike2020] and large-scale product development which has both project- and team-based learning aspects [e.g., @bhavya2020].
+Scholars also studied social topics such as ethics and equity in the data science classroom [@alexander2022] and student self-regulation [@zhang2020].
+
+Almost all publications we read were calling the scientific community to action.
+For instance, @davis2020 **call the community to action** in inclusion of ethics in undergraduate data science education but they do this through systematic review.
+On the other hand, we encountered publications with an important message to data science education but without a review of programs, courses, activities etc.
+For instance, @robeva2020 argue for the inclusion of data science in quantitative biology education.
+@engel2017 draw attention to the importance of statistical literacy in data science education.
+We have also seen a to-do list (i.e., action list) for the community including starting a multidisciplinary data science education journal [@hazzan2021], building a consensus on data science education and curricula [@dinov2019], developing and deploying degree programs for university students, having basic data science training for university students, and training instructors to teach data science [@bonnell2022].

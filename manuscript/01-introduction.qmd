@@ -1,0 +1,32 @@
+---
+format: pdf
+editor: visual
+bibliography: references.bib
+---
+
+The emergence of data science in the last few decades has given scientists a lot to talk and write about, accumulating a wealth of scientific literature.
+The presence of data science has been profound in the scientific community in almost every discipline.
+The National Science Foundation (NSF) called "Harnessing the Data Revolution" one of its 10 big ideas which cuts across all NSF Directorates [-@nsf].
+
+The demand for data science skills in academia and industry resulted in many higher education institutions developing courses (e.g., @baumer) as well as degree programs (e.g., @glantz; @adhikari; @stern2021data).
+With newer educational opportunities, newer educational research questions have been formed and thus data science education emerged as a field.
+For instance, the American Statistical Association's (ASA's), *Journal of Statistics Education* changed its name to *Journal of Statistics and Data Science Education (JSDSE)* [@asajour2020].
+
+Over the years, a major focus of the data science education community, unsurprisingly, has been at the undergraduate level.
+Different professional organizations and groups have tried to describe the data science competencies including but not limited to the Park City Math Institute report [@de2017curriculum], the framework of National Academies of Sciences, Engineering, and Medicine [-@nationalacademiesofsciences2021], the Association for Computing Machinery's computing competencies guidelines [@danyluk2021a], the Accreditation Board for Engineering and Technology's (ABET's) accreditation for data science programs [-@abet], and the European Union's EDISON project [@wiktorski2017].
+It is also worth noting that the majority of data science programs are at the master's level and there is still a lot of room for growth at the undergraduate level [@li2021].
+Given the global need for data science education, it is important for us to understand undergraduate data science education as well as the scientific literature on this topic.
+
+Even though there is not a consensus on what data science is and which disciplines are part of it, a common view is that data science is interdisciplinary and statistics, computer science, mathematics and other domains contribute to it [@donoho2017].
+The interdisciplinary structure of data science naturally gets reflected in educational research as well, making data science education an interdisciplinary field with contributors from statistics education, computer science education, and other educational research communities.
+
+While contributions from different educational research communities can make data science education richer, these contributions may not easily circulate across disciplines in the absence of a centralized community.
+For instance, Hazzan and Mike [-@hazzan2021] mention that despite its name JSDSE mainly caters to statistics education researchers and state that "no journal exists today that deals exclusively with data science education, let alone highlights data science education from an interdisciplinary perspective".
+
+The aforementioned examples of federal funding, courses, programs, curricular guidelines as well as the existence of conferences and journals with the title or keywords *data science education* show the growth of this field.
+In this manuscript, we detail a study conducted to understand data science education through in-depth readings of the existing literature.
+As undergraduate teacher-scholars, our focus was on undergraduate data science education.
+
+Our goals were to (1) specify current evidence and knowledge gaps in undergraduate data science education and (2) inform policymakers and data science educators/practitioners about the present status of data science education.
+We conducted a systematic literature review (@evans2001systematic; @liberati2009prisma) using criteria that we detail in @sec-methodology.
+In @sec-results we share our findings and then discuss their implications in @sec-discussion.
