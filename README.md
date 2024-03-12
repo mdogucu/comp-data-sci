@@ -8,7 +8,7 @@
 
 To cite this preprint:
 
-XXXXX
+Dogucu, M., Demirci, S., Bendekgey, H., Ricci, F. Z., & Medina, C. M. (2024). Undergraduate data science education: Who has the microphone and what are they saying?. arXiv preprint arXiv:2403.03387.
 
 ### Abstract 
 
