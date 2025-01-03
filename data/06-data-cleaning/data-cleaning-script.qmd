@@ -13,7 +13,7 @@ suppressPackageStartupMessages(library(here))
 
 ### Read files files from 04/04 merged_full
 
-The documents we did not keep need from the preliminary analysis need to be collected.
+The documents we did not keep from the preliminary analysis need to be collected.
 
 ```{r}
 prelim_reviews_og <- read_csv(
@@ -102,33 +102,12 @@ all_reviews_not_kept <- all_reviews_og %>%
 all_reviews <- bind_rows(all_reviews_kept, all_reviews_not_kept)
 ```
 
-Two documents dropped in preliminary analysis were missing publication year.
-The corrections were discussed on GitHub in Issue #45
-
-```{r}
-doc1 <- which(all_reviews$doi == "10.3934/fods.2021035")
-all_reviews$publication_year[doc1] <- "2023"
-
-doc2 <- which(all_reviews$doi == "10.3934/fods.2021032")
-all_reviews$publication_year[doc2] <- "2023"
-```
-
-One document was published online in 2017, but published in a conference in 2016, and according to our README in data folder 05 we go by conference year. 
-
-```{r}
-doc_wrong_year3 <- which(all_reviews$our_id == "Wiktorski_2017_quantitative")
-all_reviews$publication_year[doc_wrong_year3] <- "2016"
-```
-
-
-One document was categorized as a conference article but it is actually a journal article
+One document was categorized as a conference article but it is actually a journal article (in the first arXiv version, the below line incorrectly set the journal venue to "TRUE" but left the document type as "conference article")
 
 ```{r}
 doc3 <- which(all_reviews$our_id == "Ceccucci_2014_effectiveness")
-all_reviews$journal[doc3] <- TRUE
-all_reviews$conference[doc3] <- FALSE
+all_reviews$new_doc_type[doc3] <- "journal article"
 ```
-
 
 Duplicates named differently for `why_not_keep`, so replace:
 
@@ -181,7 +160,9 @@ all_reviews <- all_reviews %>%
   ))
 ```
 
-Duplicates names differently in `data_collection_type`, replace: "quantitative" with "quant" (also fix the single row with NA `data_collection_type` to "no data")
+Duplicates names differently in `data_collection_type`, replace: "quantitative" with "quant" (also fix the single row with NA `data_collection_type` to "no data").
+
+Also, "Cuadrado_2021_classification" was missclassified as `data_collection_type` being "no data" but it should be "mixed".
 
 ```{r clean-data_collection_type}
 all_reviews <- all_reviews %>% 
@@ -190,22 +171,9 @@ all_reviews <- all_reviews %>%
     is.na(data_collection_type) & keep ~ "no data",
     .default = data_collection_type
   ))
-```
 
-Cleaned `main_field`, replace:
-
--   "stat" and "statistics" with "statistics"
--   "oceanography and interdisciplinary" with "oceanography"
--   "informatics", "information science" with "informatics"
-
-```{r clean-main_field}
-all_reviews <- all_reviews %>% 
-  mutate(main_field = case_when(
-    main_field %in% c("stat", "statistics") ~ "statistics",
-    main_field == "oceanography and interdisciplinary" ~ "oceanography",
-    main_field %in% c("informatics", "information science") ~ "informatics",
-    .default = main_field
-  )) 
+reclassified_data_paper <- which(all_reviews$our_id == "Cuadrado_2021_classification")
+all_reviews$data_collection_type[reclassified_data_paper] <- "mixed"
 ```
 
 Clean `keywords` by making everything lowercase and alphabetically ordered, replace:
@@ -289,10 +257,145 @@ all_reviews$why_not_keep[edit_materials] <- "editorial material"
 
 ```
 
+## Update Sep 2024 to publication years
+
+```{r}
+updated_year_csv <- c()
+for(reviewer in c('catalina', 'federica', 'harry', 'mine', 'sinem')){
+  path <- here("data", "06-data-cleaning", "add-year-first-published", paste(reviewer, '.csv', sep=''))
+  updated_year_csv <- rbind(updated_year_csv, read_csv(path, 
+                                                      show_col_types = FALSE, 
+                                                      col_types = cols(.default = col_character())))
+}
+updated_year_csv <- rename(updated_year_csv, 
+                           document_link_ref = document_link, 
+                           reviewer_1_ref = reviewer_1, 
+                           reviewer_2_ref = reviewer_2)
 
 
+disagreements <- (updated_year_csv |> group_by(our_id) |> mutate(n_decisions = n_distinct(first_published)) |> filter(n_decisions > 1))$our_id
+
+stopifnot(length(disagreements) == 0)
+
+updated_year_csv <- updated_year_csv |> group_by(our_id) |> summarise(first_published = min(first_published))
+
+all_reviews <- merge(all_reviews, updated_year_csv, by='our_id', all.x = TRUE)
+```
+
+## Change RQ and data classification of Banadaki_2022_enabling_data based on Nov 2024 Meeting (Harry + Federica)
+
+```{r}
+doc <- which(all_reviews$our_id == "Banadaki_2022_enabling_data")
+all_reviews$research_question[doc] <- "TRUE"
+all_reviews$data_collection_type[doc] <- "qual"
+```
+
+## Replace main_field with multiple variables: audience_discipline, observational_unit, department and source_discipline
+
+Remove `main_field` variable from `all_reviews`:
+
+```{r}
+all_reviews <- all_reviews |> 
+  dplyr::select(-main_field)
+```
+
+Load file with `audience_discipline`, `observational_unit` and `department`
+
+```{r}
+recoded_main_field_all <- read_csv(
+  here("data", 
+       "06-data-cleaning", 
+       "recode-main-field",
+       "recoded_main_field_all.csv"), 
+  show_col_types = FALSE, 
+  col_types = cols(.default = col_character())
+)
+```
+
+Load file with `source_discipline` for conferences and for journals + books.
+
+```{r}
+source_discipline_conferences <- read_csv(
+  here("data", 
+       "06-data-cleaning", 
+       "code-source-discipline",
+       "source_discipline_conferences.csv"), 
+  show_col_types = FALSE, 
+  col_types = cols(.default = col_character())) |> 
+  select(-doc_type)
+
+source_discipline_journals_books <- read_csv(
+  here("data", 
+       "06-data-cleaning", 
+       "code-source-discipline",
+       "source_discipline_journals_books.csv"), 
+  show_col_types = FALSE, 
+  col_types = cols(.default = col_character())) |> 
+  select(-doc_type)
+
+
+```
+
+Add variable `source` to `all_reviews`
+
+```{r}
+all_reviews <- all_reviews |> 
+  mutate(
+    source = case_when(
+      !is.na(journal) ~ journal,
+      !is.na(conference) ~ conference,
+      !is.na(book) ~ book
+    )
+  )
+```
+
+
+Join new variables
+
+```{r}
+
+all_source_discipline <- bind_rows(
+  source_discipline_conferences,
+  source_discipline_journals_books
+)
+  
+all_reviews <- all_reviews |> 
+  left_join(
+    recoded_main_field_all,
+    by = "our_id"
+  ) |> 
+  left_join(
+    all_source_discipline,
+    by = c("source")
+  )  
+```
 
 ## Write the final clean merged csv to in the data folder
+
+```{r}
+# Reorder the columns. Also drops the old publication_year column that has been replaced by first_published
+
+col_order <- c("our_id", "document_title", "doi",
+               "document_link", "authors", "abstract",
+               "database", "reviewer_1", "reviewer_2", 
+               "keep", "why_not_keep",  "prelim_review",
+               "open_access", "first_published",
+               "new_doc_type", 
+               "journal", "conference", "book",
+               "source",
+               "affiliation_country", 
+               "content_area", "research_question",
+               "data_collection_type", 
+               "audience_discipline",
+               "reason_audience_discipline",
+               "observational_unit", 
+               "department", "reason_department", 
+               "source_discipline",
+               "reason_source_discipline",
+               "big_pic_notes", 
+               "interesting_facts", "keywords")
+all_reviews <- all_reviews[, col_order]
+```
 
 ```{r}
 write_csv(all_reviews, here("data", "all_reviews.csv"))

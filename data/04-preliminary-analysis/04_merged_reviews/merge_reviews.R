@@ -91,6 +91,13 @@ readr::write_csv(new_csv, here::here("data",
                                      "04_merged_reviews",
                                      "merged_true.csv"))
 
+proc_csv <- csv[!is.na(csv['why_not_keep']) & (csv['why_not_keep'] == 'complete conference proceedings'),]
+
+readr::write_csv(proc_csv,here::here("data", 
+                                   "04-preliminary-analysis",
+                                   "04_merged_reviews",
+                                   "merged_proceedings.csv"))
+
 print(sum(csv['keep']))
 print(sum(1-csv['keep']))
 table(csv['why_not_keep'])

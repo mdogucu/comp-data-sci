@@ -4,24 +4,27 @@ format:
   pdf:
     include-in-header: 
       text: \pagenumbering{gobble}
-editor: visual
+editor: source
 execute:
   echo: false
 ---
 
-```{r}
-suppressPackageStartupMessages(library(tidyverse))
-suppressPackageStartupMessages(library(here))
-suppressPackageStartupMessages(library(knitr))
-suppressPackageStartupMessages(library(kableExtra))
+```{r load-packages}
+#| message: false
+library(tidyverse)
+library(here)
+library(knitr)
+library(kableExtra)
 ```
 
-```{r}
+```{r read-in-data}
 all_reviews <- read_csv(
   here("data", "all_reviews.csv"), 
   show_col_types = FALSE
 )
 ```
+
+## Kept papers
 
 ```{r table-keep}
 data.frame(
@@ -61,6 +64,8 @@ all_reviews |>
   kable_styling(full_width = TRUE, latex_options = "striped")
 ```
 
+## Document type
+
 ```{r table-new_doc_type}
 all_reviews |> 
   filter(keep == TRUE) |> 
@@ -70,10 +75,12 @@ all_reviews |>
   kable_styling(latex_options = "striped")
 ```
 
-```{r table-publication_year}
+## Publication year
+
+```{r table-first_published}
 all_reviews |> 
   filter(keep == TRUE) |> 
-  arrange(desc(publication_year)) |> 
+  arrange(desc(first_published)) |> 
   mutate(journal_article = new_doc_type == "journal article") |> 
   mutate(conference_article = new_doc_type == "conference article") |> 
   mutate(magazine_article = new_doc_type == "magazine article") |>
@@ -84,7 +91,7 @@ all_reviews |>
     in_conference_article = sum(conference_article, na.rm = TRUE),
     in_magazine_article = sum(magazine_article, na.rm = TRUE),
     in_book_chapter = sum(book_chapter, na.rm = TRUE),
-    .by = "publication_year"
+    .by = "first_published"
   ) |> 
   arrange("new_doc_type") |> 
   kable(
@@ -94,6 +101,8 @@ all_reviews |>
   kable_styling(latex_options = "striped") |> 
   add_header_above(c(" " = 2, "Document type" = 4))
 ```
+
+## Affiliated countries
 
 ```{r table-affiliation_countries}
 affiliation_countries_tab <- all_reviews |> 
@@ -112,74 +121,7 @@ data.frame(
   kable_styling(latex_options = "striped")
 ```
 
-```{r table-content_area}
-all_reviews |> 
-  filter(keep == TRUE) |> 
-  arrange(content_area) |> 
-  mutate(research_question = as.logical(research_question)) |>
-  mutate(qual_data = data_collection_type == "qual") |> 
-  mutate(quant_data = data_collection_type == "quant") |> 
-  mutate(mixed_data = data_collection_type == "mixed") |>
-  summarise(
-    Total = n(), 
-    With_research_question = sum(research_question, na.rm = TRUE), 
-    With_qual_data = sum(qual_data, na.rm = TRUE), 
-    With_quant_data = sum(quant_data, na.rm = TRUE),
-    With_mixed_data = sum(mixed_data, na.rm = TRUE),
-    .by = "content_area"
-  ) |> 
-  kable(
-    booktabs = "TRUE",
-    col.names = c(
-      "Content area", 
-      "Total", 
-      "Research question",
-      "Qual",
-      "Quant",
-      "Mixed"
-    ),
-    caption = "Content area stratified by having research question(s) and data type."
-  ) |> 
-  kable_styling(latex_options = "striped") |> 
-  landscape() |> 
-  add_header_above(c(" " = 3, "Collected data" = 3))
-```
-
-```{r table-main_field}
-all_reviews |> 
-  filter(keep == TRUE) |> 
-  mutate(main_field = str_to_title(main_field)) |> 
-  arrange(main_field) |> 
-  mutate(research_question = as.logical(research_question)) |>
-  mutate(qual_data = data_collection_type == "qual") |> 
-  mutate(quant_data = data_collection_type == "quant") |> 
-  mutate(mixed_data = data_collection_type == "mixed") |>
-  mutate(any_data = data_collection_type %in% c("qual", "quant", "mixed")) |> 
-  summarise(
-    Total = n(), 
-    With_research_question = sum(research_question, na.rm = TRUE), 
-    With_any_data = sum(any_data, na.rm = TRUE),
-    With_qual_data = sum(qual_data, na.rm = TRUE), 
-    With_quant_data = sum(quant_data, na.rm = TRUE),
-    With_mixed_data = sum(mixed_data, na.rm = TRUE),
-    .by = "main_field"
-  ) |>
-  kable(
-    booktabs = "TRUE",
-    col.names = c(
-      "Main field", 
-      "Total", 
-      "Research question",
-      "Total ",
-      "Qual",
-      "Quant",
-      "Mixed"
-    ),
-    caption = "Main field stratified by having research question(s) and data type."
-  ) |> 
-  kable_styling(latex_options = "striped") |> 
-  add_header_above(c(" " = 3, "Collected data" = 4))
-```
+## Keywords
 
 ```{r table-keywords}
 all_keywords <- all_reviews |> 
@@ -199,4 +141,420 @@ janitor::tabyl(all_keywords) |>
     caption = "All keywords with multiple instances"
   ) |> 
   kable_styling(latex_options = "striped") 
+```
+
+
+## Audience Discipline
+
+
+```{r}
+kept_reviews <- all_reviews |> 
+  filter(keep == TRUE) |> 
+  filter(audience_discipline != "unclassifiable") |> 
+  mutate(audience_discipline = str_to_title(audience_discipline)) |> 
+  arrange(audience_discipline) |> 
+  mutate(audience_discipline = case_when(
+    audience_discipline %in% c(
+      "Biomedical", 
+      "Biomedical Science"
+    ) ~ "Biomedical Science",
+    TRUE ~ audience_discipline
+  ))
+
+audience_dicipline_df <- data.frame(
+  audience_discipline = as_vector(
+    str_split(kept_reviews$audience_discipline, pattern = "; ")
+  )
+) |> 
+  mutate(audience_discipline = ifelse(
+    audience_discipline == "Stem",
+    yes = "STEM",
+    no = audience_discipline
+))
+
+audience_dicipline_df <- audience_dicipline_df |> 
+  mutate(audience_discipline = factor(
+    audience_discipline, 
+    levels = names(sort(table(audience_dicipline_df$audience_discipline)))
+  )) |> 
+  mutate(audience_discipline_grp = case_when(
+    audience_discipline %in% c(
+      "Medicine", 
+      "Biomedical Science"
+    ) ~ "Medical Sciences",
+    audience_discipline %in% c(
+      "Biology", 
+      "Microbiology"
+    ) ~ "Biology",
+    audience_discipline %in% c(
+      "Electrical Engineering", 
+      "Engineering"
+    ) ~ "Engineering",
+    audience_discipline %in% c(
+      "Informatics", 
+      "Information Science", 
+      "Information Technology"
+    ) ~ "Informatics",
+    TRUE ~ audience_discipline
+  ))
+
+audience_dicipline_df <- audience_dicipline_df |> 
+  mutate(audience_discipline_grp = factor(
+    audience_discipline_grp, 
+    levels = names(sort(table(audience_dicipline_df$audience_discipline_grp)))
+  )) 
+
+# # Plot of ungrouped audience discipline
+# ggplot(audience_dicipline_df, aes(y = audience_discipline)) +
+#   geom_bar() +
+#   labs(
+#     title = "Number of each publication audience discipline",
+#     x = "Count",
+#     y = "Discipline of Publication Audience"
+#   ) +
+#   theme_minimal()
+
+# Plot of grouped audience discipline
+ggplot(audience_dicipline_df, aes(y = audience_discipline_grp)) +
+  geom_bar() +
+  labs(
+    title = "Number of each publication audience discipline",
+    x = "Count",
+    y = "Discipline of Publication Audience"
+  ) +
+  theme_minimal()
+```
+
+Nothing really interesting about audience discipline by research question and data collection type
+```{r table-audience-discipline-by-research-question}
+kept_reviews |> 
+  mutate(audience_discipline = factor(
+    audience_discipline, 
+    levels = pull(
+      count(kept_reviews, audience_discipline, sort = TRUE), 
+      audience_discipline
+    )
+  )) |> 
+  mutate(research_question = as.logical(research_question)) |>
+  mutate(qual_data = data_collection_type == "qual") |> 
+  mutate(quant_data = data_collection_type == "quant") |> 
+  mutate(mixed_data = data_collection_type == "mixed") |>
+  mutate(any_data = data_collection_type %in% c("qual", "quant", "mixed")) |> 
+  summarise(
+    Total = n(), 
+    With_research_question = sum(research_question, na.rm = TRUE), 
+    With_any_data = sum(any_data, na.rm = TRUE),
+    With_qual_data = sum(qual_data, na.rm = TRUE), 
+    With_quant_data = sum(quant_data, na.rm = TRUE),
+    With_mixed_data = sum(mixed_data, na.rm = TRUE),
+    .by = "audience_discipline"
+  ) |>
+  arrange(audience_discipline) |> 
+  kable(
+    booktabs = "TRUE",
+    col.names = c(
+      "Audience Discipline", 
+      "Total", 
+      "Research Question",
+      "Total ",
+      "Qual",
+      "Quant",
+      "Mixed"
+    ),
+    caption = "Audience Discipline stratified by having research question(s) and data type."
+  ) |> 
+  kable_styling(latex_options = "striped") |> 
+  add_header_above(c(" " = 3, "Collected data" = 4))
+
+kept_reviews |> 
+  mutate(audience_discipline = factor(
+    audience_discipline, 
+    levels = pull(
+      count(kept_reviews, audience_discipline, sort = TRUE), 
+      audience_discipline
+    )
+  )) |> 
+  mutate(research_question = as.logical(research_question)) |>
+  mutate(qual_data = data_collection_type == "qual") |> 
+  mutate(quant_data = data_collection_type == "quant") |> 
+  mutate(mixed_data = data_collection_type == "mixed") |>
+  mutate(any_data = data_collection_type %in% c("qual", "quant", "mixed")) |> 
+  summarise(
+    Total = n(), 
+    With_research_question = sum(research_question, na.rm = TRUE), 
+    With_any_data = sum(any_data, na.rm = TRUE),
+    With_qual_data = sum(qual_data, na.rm = TRUE), 
+    With_quant_data = sum(quant_data, na.rm = TRUE),
+    With_mixed_data = sum(mixed_data, na.rm = TRUE)
+  ) |>
+  kable(
+    booktabs = "TRUE",
+    col.names = c(
+      "Total", 
+      "Research Question",
+      "Total ",
+      "Qual",
+      "Quant",
+      "Mixed"
+    ),
+    caption = "Research question(s) and data type."
+  ) |> 
+  kable_styling(latex_options = "striped") |> 
+  add_header_above(c(" " = 2, "Collected data" = 4))
+```
+
+
+## Department
+
+The counts are so low I don't think there is anything interesting from this variable.
+```{r}
+reviews_with_department <- all_reviews |> 
+  filter(keep == TRUE) |> 
+  mutate(department = str_to_title(department)) |> 
+  filter(department != "Not Applicable")
+
+count(reviews_with_department, department, sort = TRUE)
+```
+
+
+## Observational unit
+
+Here we simplify observational unit labels
+```{r}
+## For identifying different values 
+# all_reviews |> 
+#   filter(keep == TRUE) |> 
+#   mutate(observational_unit = str_to_lower(observational_unit)) |> 
+#   filter(observational_unit != "not applicable") |> 
+#   count(observational_unit, sort = TRUE) |> 
+#   pull(observational_unit)
+
+reviews_with_obs_unit <- all_reviews |> 
+  filter(keep == TRUE) |> 
+  mutate(observational_unit = str_to_lower(observational_unit)) |> 
+  mutate(observational_unit = case_when(
+    observational_unit == "not appliable" ~ "not applicable",
+    TRUE ~ observational_unit
+  )) |> 
+  filter(observational_unit != "not applicable") |> 
+  mutate(observational_unit_refined = case_when(
+    observational_unit %in% c(
+      "81 first-year graduate students and senior undergraduates with diverse engineering backgrounds enrolled in a graduate level course and 20 students who took the class in the past",
+      "graduate and undergraduate students of introduction to data science at a school of public health",
+      "undergraduate and graduate students in a statistical computing course"
+    ) ~ "undergradate & graduate students",
+    observational_unit %in% c(
+      "acadmic and inductrial data science programs and courses"
+    ) ~ "acadmic programs & courses; industrial programs & courses",
+    observational_unit %in% c(
+      "bachelor\x92s and master\x92s programmes with the name of data science, data analytics, and analytics in the us",
+      "data science programs offered by middle eastern academic institutions",
+      "data science, informatics, and bioinformatics programs"
+    ) ~ "academic programs",
+    observational_unit %in% c(
+      "capstone projects; undergraduate students; graduate students"
+    ) ~ "capstone projects; undergraduate & graduate students",
+    observational_unit %in% c(
+      "computer science students",
+      "computer science students in an undergraduate computer science ethics course at a large public research-intensive university",
+      "educational technology undergraduate students",
+      "senior information technology software development concentration students enrolled in the capstone course",
+      "students (undergraduate students who have already completed at least two courses in computer science) who took an introductory data science course at wellesley college, a female population, in either spring 2016 or fall 2017.",
+      "students of a general education it course",
+      "students taking part in supervised undergraduate research experiences",
+      "third and fourth year undergraduates in microbiology courses",
+      "undergraduate students in introduction to psychological statistics classes"
+    ) ~ "undergraduate students",
+    observational_unit %in% c(
+      "data science course syllabi"
+    ) ~ "course syllabi",
+    observational_unit %in% c(
+      "data science instructors"
+    ) ~ "instructors",
+    observational_unit %in% c(
+      "data science professionals"
+    ) ~ "professionals",
+    observational_unit %in% c(
+      "data visualization software"
+    ) ~ "data visualization software",
+    observational_unit %in% c(
+      "documents providing data science curricular level competencies and introductory course topics"
+    ) ~ "documents with competencies and introductory course topics",
+    observational_unit %in% c( # haven't grouped since here
+      "faculty who teach computer science and undergraduate students who have completed four semesters of undergraduate computer science education",
+      "students and teachers of business informatics at a technical university"
+    ) ~ "instructors; undergraduate students",
+    observational_unit %in% c(
+      "graders/tas and students enrolled in a data science course on text information systems"
+    ) ~ "graders & tas; students",
+    observational_unit %in% c(
+      "high school and undergraduate electrical engineering students"
+    ) ~ "high school & undergraduate students",
+    observational_unit %in% c(
+      "job ad related documents; program descriptions"
+    ) ~ "job ad related documents; program descriptions",
+    observational_unit %in% c(
+      "literature indexed by the following databases: (1) web of science (wos); (2) scopus; and (3) acm digital library (acm dl) with three keywords as (1) data science; (2) education; and (3) undergraduate; two frontier data science educators"
+    ) ~ "literature",
+    observational_unit %in% c(
+      "medical students",
+      "students across two introductory computer science courses",
+      "students in  information engineering department",
+      "students in an introduction to data science course",
+      "students of a text mining and information retrieval course"
+    ) ~ "students",
+    observational_unit %in% c(
+      "michigan data science team participants"
+    ) ~ "michigan data science team participants",
+    observational_unit %in% c(
+      "practitioner-instructors teaching data science" 
+    ) ~ "practitioner-instructors",
+    observational_unit %in% c(
+      "reports, developed from multidisciplinary teams, with curriculum recommendations for data science, focusing on their coverage of teaching ethics"
+    ) ~ "reports with curriculum recommendations",
+    observational_unit %in% c(
+      "senior academics, industry professionals, information systems students"
+    ) ~ "instructors; professionals; students",
+    observational_unit %in% c(
+      "teaching topics and course descriptions of data science-related courses taught at purdue university"
+    ) ~ "teaching topics & course descriptions",
+    TRUE ~ observational_unit
+  ))
+
+# reviews_with_obs_unit |> 
+#   count(observational_unit_refined, sort = TRUE) 
+
+all_obs_units_vec <- reviews_with_obs_unit |>
+  count(observational_unit_refined, sort = TRUE) |> 
+  pull(observational_unit_refined)
+
+reviews_with_obs_unit |> 
+  mutate(observational_unit_refined = factor(
+    observational_unit_refined,
+    levels = rev(all_obs_units_vec)
+  )) |> 
+  ggplot(aes(y = observational_unit_refined)) +
+  geom_bar() +
+  # scale_x_discrete(
+  #   limits = c(0, 2, 4, 6, 8, 10)
+  # ) +
+  labs(x = "Count", y = "Observational Units Refined") + 
+  theme_minimal()
+```
+
+Now we group labels more broadly
+```{r}
+## For identifying different values 
+# all_reviews |> 
+#   filter(keep == TRUE) |> 
+#   mutate(observational_unit = str_to_lower(observational_unit)) |> 
+#   filter(observational_unit != "not applicable") |> 
+#   count(observational_unit, sort = TRUE) |> 
+#   pull(observational_unit)
+
+reviews_with_obs_unit_grp <- all_reviews |> 
+  filter(keep == TRUE) |> 
+  mutate(observational_unit = str_to_lower(observational_unit)) |> 
+  mutate(observational_unit = case_when(
+    observational_unit == "not appliable" ~ "not applicable",
+    TRUE ~ observational_unit
+  )) |> 
+  filter(observational_unit != "not applicable") |> 
+  mutate(observational_unit_grp = case_when(
+    observational_unit %in% c(
+      "81 first-year graduate students and senior undergraduates with diverse engineering backgrounds enrolled in a graduate level course and 20 students who took the class in the past",
+      "graduate and undergraduate students of introduction to data science at a school of public health",
+      "undergraduate and graduate students in a statistical computing course",
+      "computer science students",
+      "computer science students in an undergraduate computer science ethics course at a large public research-intensive university",
+      "educational technology undergraduate students",
+      "senior information technology software development concentration students enrolled in the capstone course",
+      "students (undergraduate students who have already completed at least two courses in computer science) who took an introductory data science course at wellesley college, a female population, in either spring 2016 or fall 2017.",
+      "students of a general education it course",
+      "students taking part in supervised undergraduate research experiences",
+      "third and fourth year undergraduates in microbiology courses",
+      "undergraduate students in introduction to psychological statistics classes",
+      "high school and undergraduate electrical engineering students",
+      "medical students",
+      "students across two introductory computer science courses",
+      "students in  information engineering department",
+      "students in an introduction to data science course",
+      "students of a text mining and information retrieval course"
+    ) ~ "students",
+    observational_unit %in% c(
+      "acadmic and inductrial data science programs and courses"
+    ) ~ "acadmic programs & courses; industrial programs & courses",
+    observational_unit %in% c(
+      "bachelor\x92s and master\x92s programmes with the name of data science, data analytics, and analytics in the us",
+      "data science programs offered by middle eastern academic institutions",
+      "data science, informatics, and bioinformatics programs"
+    ) ~ "academic programs",
+    observational_unit %in% c(
+      "capstone projects; undergraduate students; graduate students"
+    ) ~ "capstone projects; students",
+    observational_unit %in% c(
+      "data science course syllabi"
+    ) ~ "course syllabi",
+    observational_unit %in% c(
+      "data science instructors",
+      "practitioner-instructors teaching data science"
+    ) ~ "instructors",
+    observational_unit %in% c(
+      "data science professionals"
+    ) ~ "professionals",
+    observational_unit %in% c(
+      "data visualization software"
+    ) ~ "data visualization software",
+    observational_unit %in% c(
+      "documents providing data science curricular level competencies and introductory course topics"
+    ) ~ "course documents",
+    observational_unit %in% c( # haven't grouped since here
+      "faculty who teach computer science and undergraduate students who have completed four semesters of undergraduate computer science education",
+      "students and teachers of business informatics at a technical university"
+    ) ~ "instructors; students",
+    observational_unit %in% c(
+      "graders/tas and students enrolled in a data science course on text information systems"
+    ) ~ "graders & tas; students",
+    observational_unit %in% c(
+      "job ad related documents; program descriptions"
+    ) ~ "job ad related documents; program descriptions",
+    observational_unit %in% c(
+      "literature indexed by the following databases: (1) web of science (wos); (2) scopus; and (3) acm digital library (acm dl) with three keywords as (1) data science; (2) education; and (3) undergraduate; two frontier data science educators"
+    ) ~ "literature",
+    observational_unit %in% c(
+      "michigan data science team participants"
+    ) ~ "michigan data science team participants",
+    observational_unit %in% c(
+      "reports, developed from multidisciplinary teams, with curriculum recommendations for data science, focusing on their coverage of teaching ethics"
+    ) ~ "reports with curriculum recommendations",
+    observational_unit %in% c(
+      "senior academics, industry professionals, information systems students"
+    ) ~ "instructors; professionals; students",
+    observational_unit %in% c(
+      "teaching topics and course descriptions of data science-related courses taught at purdue university"
+    ) ~ "teaching topics & course descriptions",
+    TRUE ~ observational_unit
+  ))
+
+all_obs_units_grp_vec <- reviews_with_obs_unit_grp |>
+  count(observational_unit_grp, sort = TRUE) |> 
+  pull(observational_unit_grp)
+
+all_obs_units_grp_df <- data.frame(
+  obs_units_grp = as_vector(str_split(all_obs_units_grp_vec, pattern = "; "))
+)
+
+grp_levels_ordered <- all_obs_units_grp_df |> 
+  count(obs_units_grp, sort = TRUE) |> 
+  pull(obs_units_grp)
+
+all_obs_units_grp_df |> 
+  mutate(obs_units_grp = factor(
+    obs_units_grp, 
+    levels = rev(grp_levels_ordered)
+  )) |> 
+  ggplot(aes(y = obs_units_grp)) +
+  geom_bar() +
+  labs(x = "Count", y = "Observational Units Grouped") + 
+  theme_minimal()
 ```

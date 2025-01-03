@@ -1,0 +1,124 @@
+---
+title: "Summary tables"
+format: 
+  pdf:
+    include-in-header: 
+      text: \pagenumbering{gobble}
+execute:
+  echo: false
+---
+
+```{r}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(here))
+suppressPackageStartupMessages(library(knitr))
+suppressPackageStartupMessages(library(kableExtra))
+```
+
+```{r}
+all_reviews <- read_csv(
+  here("data", "all_reviews.csv"), 
+  show_col_types = FALSE
+)
+```
+
+```{r}
+conferences <- sort(unique(all_reviews$conference))
+source <- c(conferences)
+doc_type <- c(rep("conferences",
+                  length(conferences)))
+```
+
+```{r}
+code_source_discipline <- 
+  data.frame(source = source,
+             doc_type = doc_type,
+             source_discipline = NA,
+             reason_source_discipline = NA)
+write_csv(code_source_discipline, 
+          here("data",
+               "06-data-cleaning",
+               "code-source-discipline",
+               "source_discipline_conferences.csv"))
+```
+
+```{r}
+
+# filter(code_source_discipline, str_detect(source, "L@S")) |> View()
+
+add_discipline <- function(array, new_string) {
+  multi_discipline <- ifelse(str_detect(array, new_string), array, sapply(array, function(x) paste0(x, "; ", new_string)))
+  return(if_else(is.na(array), new_string, multi_discipline))
+}
+
+code_source_discipline |> 
+  mutate(
+    source_discipline =  if_else(str_detect(source, "IEEE"),
+                                 add_discipline(source_discipline, 'engineering'),
+                                 source_discipline),
+    source_discipline = if_else(str_detect(source, "ASEE"),
+                                add_discipline(source_discipline, 'engineering'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "SIGCSE"),
+                                add_discipline(source_discipline, 'computer science'),
+                                source_discipline), #ACM
+    source_discipline = if_else(str_detect(source, "SIGITE"), #ACM
+                                add_discipline(source_discipline, 'computer science'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "ITiCSE"),
+                                add_discipline(source_discipline, 'computer science'),
+                                source_discipline), #ACM
+    source_discipline = if_else(str_detect(source, "ACM"),
+                                add_discipline(source_discipline, 'computer science'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "AVI"), # organized by ACM
+                                add_discipline(source_discipline, 'computer science'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "CHI"), # organized by ACM
+                                add_discipline(source_discipline, 'computer science'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "DataEd"), # organized by ACM
+                                add_discipline(source_discipline, 'computer science'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "L@S"), # organized by ACM
+                                add_discipline(source_discipline, 'computer science'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "International Conference of the Learning Sciences"), # organized by ??
+                                add_discipline(source_discipline, 'computer science; education'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "International Conference on eScience"), # organized by IEEE
+                                add_discipline(source_discipline, 'engineering'),
+                                source_discipline),
+     source_discipline = if_else(str_detect(source, "International Conference on Information Technology Based Higher Education and Training"), # IEEE, IES, and EdSoc provided technical co-sponsorship to nearly all of these conferences
+                                add_discipline(source_discipline, 'engineering; education'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "International Symposium on Symbolic and Numeric Algorithms for Scientific Computing"), # Proceedings are published by IEEE
+                                add_discipline(source_discipline, 'engineering'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "International Conference on Big Data and Education"), # Proceedings are published by ACM
+                                add_discipline(source_discipline, 'computer science'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "International Conference on Information and Education Technology"), # Google calls it IEEE/ICIET 
+                                add_discipline(source_discipline, 'engineering'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "iConference"), # unknown
+                                add_discipline(source_discipline, 'computer science; education'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "IFIP Advances in Information and Communication Technology"), # in the about section, they list computer science topics
+                                add_discipline(source_discipline, 'computer science'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "International Conference on Artificial Intelligence in Education"), # in the about section, they list these fields
+                                add_discipline(source_discipline, 'computer science; education; psychology'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "International Conference on Management of Digital EcoSystems"), # in the about section, they focus on internet of things
+                                add_discipline(source_discipline, 'computer science'),
+                                source_discipline),
+    source_discipline = if_else(str_detect(source, "International Conference on Computational Thinking Education"), # in the about section, they focus on computers in education
+                                add_discipline(source_discipline, 'computer science; education'),
+                                source_discipline),
+    ) |> 
+  write_csv(here("data",
+                 "06-data-cleaning",
+                 "code-source-discipline",
+                 "source_discipline_conferences.csv"))
+```

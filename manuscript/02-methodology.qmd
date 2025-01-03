@@ -13,20 +13,138 @@ We chose to employ a qualitative research design to gain a deeper understanding 
 
 -->
 ```
-```{r}
+
+```{r load-data}
 #| echo: false
 #| message: false
 #| warning: false
 library(tidyverse)
 library(here)
 library(knitr)
+library(kableExtra)
 
 all_reviews <- read_csv(
   here("data", "all_reviews.csv"), 
   show_col_types = FALSE
 )
-why_not_keep <- data.frame(sort(table(all_reviews$why_not_keep), dec=TRUE))
 
+why_not_keep <- all_reviews |> 
+  filter(keep == FALSE) |> 
+  group_by(prelim_review, why_not_keep) |> 
+  summarize(total = n()) |> 
+  rename(reason = why_not_keep)
+```
+
+```{r aggregate-exclusion-reasons}
+#| echo: false
+#| message: false
+#| warning: false
+# Aggregate:
+# - not about data science education
+# - k-12
+# - not a journal/conference/magazine article or book chapter
+# - other non-undergraduate focused data science education (e.g. for practitioners)
+why_not_keep <- why_not_keep |> 
+  mutate(
+    reason = case_when(
+      # Based on why_not_keep$reason[str_detect(why_not_keep$reason, "data science")]
+      str_detect(reason, "data science") |
+       reason == "ai assisted online tutoring system" |
+        reason == "methodology" ~ "Not about data science education", 
+     # Based on why_not_keep$reason[str_detect(why_not_keep$reason, "school")]
+     str_detect(reason, "school") | 
+       reason == "k-12" ~ 
+       "Data science education for K-12, middle school or high school",
+     # Excluded based on format 
+     # Based on why_not_keep$reason[str_detect(why_not_keep$reason, "edit")]
+     reason %in% c("panel", "poster", 
+                   "complete conference proceedings", 
+                   "ad hoc organizers", "dissertation abstract", 
+                   "doctoral consortium abstract", "interview", 
+                   "meeting highlights", 
+                   "poster session summary with multiple posters",
+                   "presentation summary",
+                   "editorial material",
+                   "introduction to a journal's special issue") |
+       str_detect(reason, "edit") ~ 
+       "Format (not a journal/conference/magazine article or book chapter)",
+     # graduate
+     str_detect(reason, "graduate") ~ 
+       "Data science education for graduate students",
+    # on data science education, but not for k-12/undergraduate/graduate
+    reason %in% c("Massive Open Online Course", "citizen science",
+                  "museum visitors", "instructors",
+                  "practitioners", "practitioners and researchers" ,
+                  "prospective college students" ) ~ 
+      "Data science education for adults in non-academic programs*", 
+    reason == "not in english" ~ "Not in English",
+      .default = str_to_sentence(reason)
+    )
+  ) |> 
+  group_by(prelim_review, reason) |> 
+  summarize(total = sum(total)) |>  
+  arrange(-prelim_review, -total) 
+
+# Compute summaries to display in flowchart
+summary_exclusion <- why_not_keep |> 
+  mutate(
+    broad_reason = case_when(
+      reason == "Format (not a journal/conference/magazine article or book chapter)" ~
+        "Format (not a journal/conference/magazine article or book chapter)",
+      reason %in% c("Duplicate paper", "Retracted", "Not in English") 
+      ~ "Other (Publication was duplicate/retracted/not in English)",
+      .default = "Content (not about undergraduate data science education)"
+    )
+  ) |> 
+  group_by(prelim_review, broad_reason) |> 
+  summarize(total = sum(total)) |> 
+  arrange(-prelim_review, -total)  
+
+why_not_keep_tot <- why_not_keep |> 
+  group_by(reason) |> 
+  summarize(total = sum(total))
+
+```
+
+The target population of this literature review was publications on data science education that directly address the undergraduate level.
+Due to variations in terminology, keywords, and language used by teacher-scholars across different data science fields, identifying the entire target population was not feasible.
+Since there is no consensus on what data science is, and consequently what data science education is, we did not evaluate whether publications met a certain definition of data science.
+Rather, we considered publications that self-proclaim to focus on data science education.
+Therefore, we opted to identify the accessible population for this study as publications that included “data science education” in quotes in the title, abstract, or keywords.
+
+![Flowchart of data collection and analysis. Publications were collected in December 2022.](methods-diagram/methods-diagram.png){#fig-flowchart}
+
+@fig-flowchart summarizes the stages of our data collection and analysis processes which led to the sample of this study.
+As shown in the diagram, we extracted data from six databases that potentially include publications on data science education.
+These databases were: (1) ERIC ProQuest, (2) IEEE Xplore, (3) PubMed, (4) ScienceDirect, (5) Scopus, and (6) Web of Science.
+These databases were selected because they cover a large number of publications and they include multiple disciplines that are commonly linked to data science education.
+For instance, ERIC ProQuest is known to mainly include education-focused publications, IEEE Xplore focuses on engineering and Web of Science is multidisciplinary-focused.
+
+From the selected databases, we collected publications including the term "data science education" (in quotes) in at least one of the following fields: title, abstract, keywords.
+We acknowledge that there are many other combinations of search terms that could result in publications related to data science education, including terms such as "data science courses", "data science pedagogy", "data science curriculum".
+One can generate numerous similar terms, with or without quotes.
+We specifically used the term "data science education" for its broadness and to set the scope of the research.
+We did not use "data science" and "education" separately to avoid publications in education that employ data science methods for their analyses.
+
+Across the six databases, we found a total of `r nrow(all_reviews)` publications that met our search criteria.
+We extracted some variables including, but not limited to: author names; publication title; publication venue (e.g., journal title or conference title).
+We conducted the initial database search in December 2022, resulting in a pool of publications that were either published by that date or available online by that date but officially published in 2023.
+
+The data analysis was conducted in two stages: 1) preliminary data analysis and 2) in-depth data analysis.
+Each publication was randomly assigned to two authors of the present manuscript.
+At both data-analysis stages, the two assigned reviewers first examined each publication independently and then discussed discrepancies between their analysis decisions, to reach a consensus.
+In cases where conflicts persisted, the entire group of five authors deliberated on the final decision.
+
+During preliminary data analysis, we manually opened and read the abstracts of all publications.
+At this stage, we sought to exclude publications that did not meet our format and content criteria based on their abstracts.
+Specifically, we aimed to include journal/conference/magazine articles and book chapters (*format*) that focused on undergraduate data science education (*content*) and were written in English.
+During in-depth analysis we examined the full publications and, upon confirming that they met our inclusion criteria, we recorded variables of potential interest.
+The number of publications that were excluded due to format, content or other reason, at each stage of our analysis, is shown in @fig-flowchart.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
 excluded <- data.frame(
   n_docs_reviewed = nrow(all_reviews),
   n_docs_kept = all_reviews |> 
@@ -41,95 +159,65 @@ excluded <- data.frame(
   n_docs_excluded_total = all_reviews |> 
     filter(keep == FALSE) |> 
     nrow(),
-  n_docs_excluded_format = all_reviews |> 
-    filter(keep == FALSE) |> 
-    filter(why_not_keep %in% c("panel",
-                               "complete conference proceedings",
-                               "not in english",
-                               "retracted",
-                               "poster session summary with multiple posters",
-                               "duplicate paper",
-                               "interview",
-                               "note from journal's editor",
-                               "poster",
-                               "dissertation abstract",
-                               "doctoral consortium abstract",
-                               "introduction to a journal's special issue",
-                               "letter to journal editor",
-                                "meeting highlights",
-                               "presentation summary")) |> 
-    nrow(),
-  n_docs_graduate = all_reviews |>
-    filter(why_not_keep %in% c("graduate",
-                               "postgraduate")) |> 
-    nrow(),
-  n_docs_k_12 = all_reviews |>
-    filter(why_not_keep == "k-12") |> 
-    nrow(),
-  n_docs_high_school = all_reviews |>
-    filter(why_not_keep == "high school") |> 
-    nrow(),
-  n_docs_mid_school = all_reviews |>
-    filter(why_not_keep == "middle school") |> 
-    nrow(),  
-  n_docs_mid_high_school = all_reviews |>
-    filter(why_not_keep == "middle school and high school") |> 
-    nrow(),   
-  n_docs_elem_school = all_reviews |>
-    filter(why_not_keep == "elementary school") |> 
-    nrow()    
+  n_docs_excluded_format = summary_exclusion |> 
+    filter(str_detect(broad_reason, "Format")) |> 
+    pull(total) |> 
+    sum(),
+  n_docs_excluded_content = summary_exclusion |> 
+    filter(str_detect(broad_reason, "Content")) |> 
+    pull(total) |> 
+    sum(),  
+  n_docs_graduate = why_not_keep |> 
+    filter(str_detect(reason, "graduate")) |> 
+    pull(total) |> 
+    sum(),
+  n_docs_k_12 = why_not_keep |> 
+    filter(str_detect(reason, "K-12")) |> 
+    pull(total) |> 
+    sum(),
+  n_docs_non_academic = why_not_keep |> 
+    filter(str_detect(reason, "adults")) |> 
+    pull(total) |> 
+    sum(),
+  n_not_ds_ed = why_not_keep |> 
+    filter(str_detect(reason, "Not about")) |> 
+    pull(total) |> 
+    sum(),
+  n_other = summary_exclusion |> 
+    filter(str_detect(broad_reason, "Other")) |> 
+    pull(total) |> 
+    sum()
 ) 
-
-
 ```
 
-We opted to extract data from six databases that potentially include publications on data science education.
-These databases were (1) ERIC ProQuest, (2) IEEE Xplore, (3) PubMed, (4) ScienceDirect, (5) Scopus, and (6) Web of Science.
-After determining the databases, we searched documents including the specific keyword "data science education" (in quotes) in at least one of the following fields: title, abstract, keywords.
-We found a total of `r nrow(all_reviews)` publications that met our criteria.
-Using the databases, we extracted some variables including but not limited to author names, document title, and publication venue (e.g., journal title or conference title).
-We conducted the initial database search in December 2022, resulting in a pool of documents that were either published by that date or available online by that date but officially published in 2023.
-The data on all the publications and the associated codebook for the variables are publicly available in a GitHub repository at \github{}.
+Across both stages, we excluded `r excluded$n_docs_excluded_format` publications due to formatting (which included posters, panels, letters to journal editors and meeting highlights).
+Of the remaining `r excluded$n_docs_reviewed - excluded$n_docs_excluded_format` publications, `r excluded$n_docs_excluded_content` were excluded due to their content: `r excluded$n_not_ds_ed` of them were not about data science education (including e.g. publications focused on data science methodology) and `r excluded$n_docs_excluded_content - excluded$n_not_ds_ed` of them focused exclusively on a different level of education than undergraduate.
+Among the latter excluded group, `r excluded$n_docs_graduate` publications focused on graduate level, `r excluded$n_docs_k_12` focused on K-12, middle school or high school and `r excluded$n_docs_non_academic` publications focused on data science education for adults in non-academic programs (including, e.g. practitioners, citizen science and instructors).
+Publications that focused on both undergraduate and non-undergraduate levels were included.
+Of the remaining `r excluded$n_docs_reviewed - excluded$n_docs_excluded_format - excluded$n_docs_excluded_content` publications, other `r excluded$n_other` were excluded due to being: not written in English; duplicated in our dataset; retracted by their authors.
 
-We conducted data analysis in two stages: 1) preliminary data analysis and 2) in-depth data analysis.
-In the preliminary data analysis stage, we manually opened and read abstracts of publications.
-In the in-depth analysis stage, we read the full publications and recorded variables of potential interest.
-At both preliminary and in-depth analyses stages, each publication was assigned to two researchers randomly for independent review.
-The reviewer pairs discussed any discrepancies between their analysis decisions and tried to reach a consensus.
-In cases where conflicts persisted, the entire group of five researchers deliberated on the final decision.
+After excluding publications for the reasons detailed above, we were left with `r excluded$n_docs_kept` publications, which we analyzed in-depth.
+In addition to the variables extracted from databases (e.g. title of the publication, author names, etc.) for each publication we collected data on:
 
-```{r}
-#| echo: false
-#| message: false
-```
+-   affiliation country of researchers
 
-```{=html}
-<!--\textcolor{brown}{Alternative (to avoid the language of \`kept'): we excluded `r excluded$n_docs_excluded_prelim` publications during our preliminary analysis and `r excluded$n_docs_excluded_in_depth` during our in-depth analysis.
-Of those,} -->
-```
-Throughout these two stages of analysis, we excluded `r excluded$n_docs_excluded_format` publications due to formatting which included posters, panels, letters to journal editors, meeting highlights, publications not in English, duplicated publications, etc.
-We then looked at whether the remaining `r excluded$n_docs_reviewed - excluded$n_docs_excluded_format` publications were at the undergraduate level or not.
-For instance, if a publication focused on both K-12 and undergraduate levels, it was retained for in-depth analysis.
-Conversely, if a publication exclusively focused on K-12 settings, it was excluded.
-We excluded `r excluded$n_docs_graduate` publications that focused only on graduate level, `r excluded$n_docs_k_12` on K-12, `r excluded$n_docs_high_school` on high school, `r excluded$n_docs_mid_school` on middle school and `r excluded$n_docs_mid_high_school` on middle and high school.
-In total, we had `r excluded$n_docs_reviewed - excluded$n_docs_excluded_prelim` publications remaining by the end of the preliminary analysis and `r excluded$n_docs_kept` publications by the end of in-depth analysis.
-A full list of exclusion criteria, including but not limited to the formatting and level-of-education reasons provided above, is provided in Table 1 of Supplementary Materials.
+<!-- -->
 
-The data collection and analysis process was performed iteratively.
-From December 2022 to December 2023, data extracted from databases were corrected and the scope of the variables of interest was continuously revised and discussed.
-For instance, if a publication was not excluded based on the abstract in the preliminary stage, it could have been excluded at the in-depth analysis stage if it did not meet the inclusion criteria.
-Similarly, we initially extracted the open access status of publications from the databases, but when we realized many papers had multiple available versions we revised our definition of open access to include any paper accessible from a Google Scholar search.
+-   open access status (i.e. whether the full publication is accessible for free from a Google Scholar search)
 
-After excluding publications on format or relevance grounds, we were left with `r excluded$n_docs_kept` documents, which we analyzed in-depth by reading the publications fully.
-In addition to the variables extracted from databases (e.g. title of the publication, author names, etc.) we collected data on (1) affiliation country of researchers (2) open access status; (3) whether there were explicit research questions stated in the publication; (4) whether there was any reporting of data collection in the study and, if data were collected, the type of data (quantitative vs. qualitative); (5) content area of the publication (i.e., topic); and (6) main field and discipline of the publication.
-In addition, we noted big picture notes of each publication to look for patterns of main study areas of the publications.
+-   year when the publication was first published online
 
-We acknowledge that, in this study, we did not reach the entire target population of undergraduate education research publications.
-There may be several other publications excluded from this study that did not meet our search criteria.
-For instance, an article that talks about a "data science class", "a data science activity", or "a data science curriculum" but does not use the phrase "data science education" would be excluded from this study.
-A further constraint is that our target population and sample included only publications written in English.
-The results we share and the findings we discuss in the next two sections only pertain to the specific search criteria we used.
-In brief, it can be considered that we have only examined *a sample* of undergraduate data science education research.
+-   document type (conference article, journal article, magazine article or book chapter)
+
+-   whether there were explicit research questions stated in the publication
+
+-   whether there was any reporting of data collection in the publication and, if data were collected, the type of data (quantitative, qualitative or mixed)
+
+-   publication focus, that is a categorization of the subject matter of the publication (for example "pedagogical approach", "class activity" or "review of current state of data science education")
+
+-   discipline of the publishing source, determined by examining the call for contributions of the journal or conference, or the description of the book or magazine ("broad" when the publishing source called for contributions across all data science fields, otherwise a specific sub-field of data science, e.g. "computer science" or "statistics")
+
+-   the discipline of the target audience, as expressed by the authors in the publication ("broad" when the publication target were all data science educators, otherwise a specific sub-field of data science, e.g. "computer science" or "statistics")
 
 ```{=html}
 <!--
@@ -142,6 +230,7 @@ In brief, it can be considered that we have only examined *a sample* of undergra
     
     -->
 ```
+
 ```{=html}
 <!--
 

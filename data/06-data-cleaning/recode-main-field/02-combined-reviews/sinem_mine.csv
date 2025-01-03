@@ -1,0 +1,9 @@
+our_id,document_link,reviewer_1,reviewer_2,content_area,audience_discipline,reason_audience_discipline,observational_unit,department,reason_department,deadline
+Betz_2020_next_wave,https://doi.org/10.1002/sam.11476,3,5,program example,broad,The learning communities tackle wide range of topics from multiple disciplines,not applicable,multiple departments,"""Students are organized into 20 learning communities. Nineteen of these are sponsored by academic departments—from every college in the Purdue university system""",22-Oct
+Bhavya_2021_scaling_up,https://doi.org/10.1145/3430895.3460168,3,5,pedagogical approach,broad,"they share their class activity with DS educators and the course offered to students enrolled in computer science program and data science program. However, there is nothing specific to computer science in the paper.",graders/TAs and students enrolled in a data science course on text information systems,not specified,students majors are CS and DS but it is unclear which department offered this course,22-Oct
+Farahi_2018_michigan_data,https://doi.org/10.1109/DSW.2018.8439915,3,5,program example,broad,"""This approach is easily scalable and can cover a broad range
+of interests while providing a positive educational experience for
+students. More importantly, this can serve as a successful model
+for other universities wishing to expand their educational goals and
+build community partnerships.""",michigan data science team participants,not applicable,student organization,10-Nov
+Song_2016_big_data,https://doi.org/10.1111/exsy.12130,3,5,review of current state of data science education,broad,not only they treat data science consisting of multiple disciplines but they also show multiple departments involved in developing data science programmes.,"Bachelor’s and master’s programmes with the name of data science, data analytics, and analytics in the US",not applicable,Due to ontent area,22-Oct

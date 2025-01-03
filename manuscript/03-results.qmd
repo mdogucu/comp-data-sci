@@ -1,17 +1,22 @@
 ---
 format: pdf
-editor: visual
+editor: source
 bibliography: references.bib
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r}
 #| echo: false
 #| message: false
+#| warning: false
 library(tidyverse)
 library(here)
 library(knitr)
 library(kableExtra)
 library(english)
+library(ggalluvial)
+library(scales)
 ```
 
 ```{r}
@@ -20,32 +25,34 @@ all_reviews <- read_csv(
   here("data", "all_reviews.csv"), 
   show_col_types = FALSE
 )
+
+num_pubs <- nrow(filter(all_reviews, keep == TRUE))
 ```
 
 ```{r}
 #| echo: false
-#| label: fig-publication_year
-#| fig-cap: "Undergraduate data science education publications ($n$ = 67) by year. Note that initial data retrieval was in December 2022."
+#| label: fig-first_published
+#| fig-cap: !expr 'paste0("Undergraduate data science education publications ($n$ = ",  num_pubs, ") by year they were first made available online. Note that initial data retrieval was in December 2022.")'
 #| fig-width: 2
 #| fig-height: 2
-min_year <-filter(all_reviews, keep==TRUE)$publication_year %>% min()
-max_year <-filter(all_reviews, keep==TRUE)$publication_year %>% max()
+min_year <-filter(all_reviews, keep==TRUE)$first_published %>% min()
+max_year <-filter(all_reviews, keep==TRUE)$first_published %>% max()
 
 all_reviews |> 
   filter(keep) |>
-  ggplot(aes(x=publication_year)) +
+  ggplot(aes(x=first_published)) +
   geom_bar(show.legend = FALSE) +
   theme_minimal() +
-  labs(y = "Number of Papers", x = "Publication Year") + 
+  labs(y = "# Publications", x = "First Available Online") +
   scale_x_continuous(breaks = seq(2015, 2023, by = 2)) +
   theme(axis.text.x = element_text(angle = 90, 
                                    vjust = 0.5, 
                                    hjust=1))
 ```
 
-@fig-publication_year shows the distribution of publication years for the `r all_reviews %>% filter(keep==TRUE) %>% nrow()` publications that we analyzed in-depth.
-The lone 2023 publication [@schmitt2023] was available online and obtained via our database search in December 2022, despite not being published until June 2023.
-The body of literature on undergraduate data science education we detected is very recent, with the oldest paper we analyzed published in `r min((all_reviews |> filter(keep))$publication_year)`, and the volume of work increasing monotonically in the following years.
+\textbf{Publication years.} @fig-first_published shows the distribution of the years when publications in our review were made available online.
+Some of these publications were available during our database search in December 2022, but would ultimately be published in a 2023 journal edition [e.g., @pieterman-bos2023; @schmitt2023].
+The body of literature that we identified is very recent, with the oldest paper available in `r min((all_reviews |> filter(keep))$first_published)` and the volume of work increasing steadily in the following years.
 
 ```{r}
 #| echo: false
@@ -63,14 +70,14 @@ n_book <- nrow(all_reviews |>
                         new_doc_type == "book chapter"))
 ```
 
-Over these `r max_year - min_year` years, a majority of published work on undergraduate data science education has been freely available to the public: the breakdown of articles' open access status is shown in @tbl-open_access along with the document type.
+\textbf{Open access status and document types.} A majority of work on undergraduate data science education published over these `r max_year - min_year + 1` years has been freely available to the public: the breakdown of articles' open access status is shown in @tbl-open_access along with the document type.
 The vast majority of journal articles were open access, while conference publications showed a more even split.
 We reviewed only `r words(n_non_conf_journal)` publications which were neither journal nor conference articles, of which `r words(n_magazine)` were magazine articles [@hazzan2021; @bonnell2022] and `r words(n_book)` were book chapters [@manzella2022can; @RYAN201645].
 
 ```{r}
 #| echo: false
 #| label: tbl-open_access
-#| tbl-cap: Document Type stratified by open access.
+#| tbl-cap: Document type stratified by open access.
 all_reviews_open_access <- all_reviews |> 
   filter(keep == TRUE) |> 
   arrange(new_doc_type) |> 
@@ -86,8 +93,52 @@ all_reviews_open_access |>
     .by = "new_doc_type"
   ) |> 
   arrange(desc(Total)) |> 
-  ungroup() |> rbind(c("Total", sum(as.logical(all_reviews$open_access),na.rm=TRUE), 
-                     sum(!as.logical(all_reviews$open_access),na.rm=TRUE), sum(all_reviews$keep))) |>
+  ungroup() |> 
+  rbind(c(
+    "Total", 
+    sum(as.logical(all_reviews$open_access),na.rm = TRUE),
+    sum(!as.logical(all_reviews$open_access),na.rm = TRUE), 
+    sum(all_reviews$keep)
+  ))|>
+  mutate(Total = case_when( # Adds marginal percentages
+    new_doc_type != "Total" ~ paste0(
+      as.numeric(Total), 
+      " (",
+      round(
+        100 * as.numeric(Total) / nrow(all_reviews_open_access), 
+        0
+      ),
+      "%)"
+    ),
+    new_doc_type == "Total" ~ Total,
+    TRUE ~ "Error"
+  )) |> 
+  mutate(open_access = case_when( # Adds marginal percentages
+    new_doc_type != "Total" ~ open_access,
+    new_doc_type == "Total" ~ paste0(
+      open_access, 
+      " (", 
+      round(
+        100 * as.numeric(open_access) / nrow(all_reviews_open_access),
+        0
+      ),
+      "%)"
+    ),
+    TRUE ~ "Error"
+  )) |> 
+  mutate(not_open_access = case_when( # Adds marginal percentages
+    new_doc_type != "Total" ~ not_open_access,
+    new_doc_type == "Total" ~ paste0(
+      not_open_access, 
+      " (", 
+      round(
+        100 * as.numeric(not_open_access) / nrow(all_reviews_open_access),
+        0
+      ),
+      "%)"
+    ),
+    TRUE ~ "Error"
+  )) |> 
   kable(
     booktabs = "TRUE",
     col.names = c(
@@ -100,10 +151,223 @@ all_reviews_open_access |>
   kable_styling(latex_options = "striped")
 ```
 
-We also investigated the geographic breakdown of institutions that are contributing to this body of literature.
-A majority of the `r sum(all_reviews$keep)` publications analyzed included at least 1 author associated with an American institution, with European and Asian institutions providing the bulk of remaining analyzed literature.
-Table 2 of Supplementary Materials breaks down the analyzed publications by the institutional affiliations of their authors.
+```{r}
+#| echo: false
+countries <- all_reviews$affiliation_country |>
+  strsplit(", ") |>
+  unlist() |>
+  unique() |>
+  na.omit()
+
+check_country <- function(x) {
+  sum(str_detect(all_reviews$affiliation_country, x), na.rm = TRUE)
+}
+
+country_table <- data.frame(
+  country = countries, 
+  counts = unlist(map(countries, check_country))
+) |> 
+  arrange(desc(counts), country)
+```
+
+
+\textbf{Affiliation countries.} We also investigated the geographic breakdown of institutions that are contributing to literature on undergraduate data science education.
+A majority of the publications analyzed included at least 1 author associated with an American institution (`r country_table[1,2]` of `r sum(all_reviews$keep)`), with European and Asian institutions providing the bulk of the remaining analyzed literature.
+@tbl-country-affiliation breaks down the analyzed publications by the institutional affiliations of their authors.
 The higher number of scholars' affiliations being in the United States may be at least partly attributed to the large size of the US relative to many other countries, as well as selection bias due to our search being restricted to English-written publications and to databases where US scholars might be more represented.
+
+```{r}
+#| echo: false
+#| label: tbl-country-affiliation
+#| tbl-cap: "For each country below, we report the number of publications which included at least one affiliated author. Affiliation country of authors was determined based on their home institutions as reported in the publication, and does not represent authors' nationalities."
+data.frame(
+  country1 = country_table$country[1:12], 
+  counts1 = country_table$counts[1:12],
+  country2 = country_table$country[13:nrow(country_table)], 
+  counts2 = country_table$counts[13:nrow(country_table)]
+) |> 
+  kable(
+    booktabs = "TRUE",
+    col.names = c(
+      "Country", 
+      "# Publications",
+      "Country", 
+      "# Publications"
+    )
+  ) |> 
+  kableExtra::kable_styling(latex_options = "striped")
+```
+
+```{r}
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+#| fig-height: 30
+#| fig-width: 25
+#| label: fig-discipline
+#| fig-cap: !expr paste("Composition of the discipline of targeted audiences of publications on data science education (right) by the discipline of the publishing source (left). A total of", n_excluded, "publications were not included in the plot, one because it stated to target both statistics and computer science, the other one because it was not possible to determine its audience discipline.")
+
+# AUDIENCE
+# Make audience_discipline into a factor, discarding documents
+# with double coding
+all_reviews_new <- all_reviews |> 
+  filter(keep == TRUE) |> 
+  mutate(
+    audience_fct = case_when(
+      str_detect(audience_discipline, "med") ~
+        "Medical Sciences",
+      audience_discipline %in% c("microbiology", "ocean science") ~
+        "Biological Sciences",   
+      str_detect(audience_discipline, "info") ~
+        "Information Sciences",        
+      str_detect(audience_discipline, "engine") ~
+        "Engineering",    
+      str_detect(audience_discipline, ";") ~ 
+        "double coded",
+      .default = str_to_title(audience_discipline) 
+    )
+  ) |> 
+  mutate(
+    audience_fct = ifelse(audience_fct == "Stem",
+                          "STEM",
+                          audience_fct)
+  ) 
+
+# SOURCE
+# Make source_discipline into a factor, discarding documents
+# with double coding
+all_reviews_new <- all_reviews_new |> 
+  mutate(
+    source_fct = str_remove(source_discipline,
+                            "education; ")
+  ) |>  
+  mutate(
+    source_fct = str_remove(source_fct,
+                            "; education")
+  ) |>    
+  mutate(
+    source_fct = str_remove(source_fct,
+                            " education")
+  ) |> 
+  mutate(
+    source_fct = case_when(
+      source_fct %in% c("biology", "oceanography") ~
+        "Biological Sciences",
+      str_detect(source_fct, "info") ~
+        "Information Sciences",
+      str_detect(source_fct, "med") ~
+        "Medical Sciences",
+      # str_detect(source_fct, ";") ~ 
+      #   "double coded",
+      .default = str_to_title(source_fct)
+    )
+  ) |> 
+  mutate(
+    source_fct = ifelse(source_fct == "Stem",
+                          "STEM",
+                        source_fct)
+  ) 
+
+
+# Change order of source_fct levels to produce the arrangement
+# that we want in the plot
+source_order <- c("Broad",
+                  "Computer Science",
+                  "Information Sciences",
+                  "Engineering",
+                  "Statistics",
+                  "Mathematics",
+                  "Education",
+                  "Library Science",
+                  "Biological Sciences",
+                  "STEM")
+
+all_reviews_new <- all_reviews_new |> 
+  mutate(
+    source_fct = fct_relevel(source_fct, 
+                             source_order)
+  )
+
+# Make count labels
+g <- all_reviews_new |> 
+  filter(source_fct != "double coded") |> 
+  filter(!(audience_fct %in% c("double coded", "Unclassifiable"))) |> 
+  mutate(frequency = 1) |> 
+  ggplot() +
+  aes(axis1 = source_fct,
+      axis2 = audience_fct,
+      y = frequency,
+      label = frequency) +  
+  # geom_text(stat = "flow", nudge_x = 0.2,
+  #           size = 2.5) 
+  geom_text(stat = "flow",
+            aes(label = after_stat(n),
+                hjust = (after_stat(flow) == "to")),
+            nudge_x = - 0.2)
+# Keep count labels "to"
+dat <- ggplot_build(g)$data[[1]] 
+dat$label[dat$flow == "from"] <- ""
+
+count_label_from <- dat |> 
+  filter(flow == "to") |> 
+  arrange(flow, stratum, -ymin) |> 
+  pull(label) |> 
+  rev() 
+
+count_label_to <-  dat |> 
+  filter(flow == "from") |> 
+  pull(label)
+count_label <- c(count_label_to, count_label_from)
+
+n_plotted <- all_reviews_new |> 
+  filter(!(audience_fct %in% c("double coded", "Unclassifiable"))) |> 
+  nrow()
+
+n_excluded <- nrow(all_reviews_new) - n_plotted
+
+# Make plot
+all_reviews_new |> 
+  filter(!(audience_fct %in% c("double coded", "Unclassifiable"))) |> 
+  group_by(source_fct, audience_fct) |> 
+  summarize(frequency = n()) |> 
+  ungroup() |> 
+  ggplot() +
+  aes(axis1 = source_fct,
+      axis2 = audience_fct,
+      y = frequency,
+      label = frequency) +
+  geom_alluvium(aes(fill = audience_fct,
+                    color = audience_fct)) +
+  geom_stratum(size = 0.1) +
+  geom_text(stat = "stratum",
+            aes(label = after_stat(stratum)),
+            size = 10,
+            lineheight = 1)  +
+  geom_label(
+    data = tibble(posi = c(1,2), 
+                  labels = c("Source", "Audience")),
+    aes(y = nrow(all_reviews_new), 
+        x = posi, label = labels, axis1 = NULL,
+        axis2 = NULL),
+    fontface = "bold", size = 12,
+  ) +  
+  # geom_text(stat = "flow", nudge_x = 0.18,
+  #           size = 1.5)  +
+  geom_text(stat = "flow",
+            label = count_label, 
+            nudge_x = - 0.18, 
+            nudge_y = -0.1,
+            size = 10) +
+  theme_void() +
+  theme(legend.position = "none") 
+
+```
+
+\textbf{Source and audience disciplines.} @fig-discipline shows the breakdown of articles by discipline.
+We report both the discipline of the publishing venue (such as the journal's or conference's discipline), and the audience that the publication stated (or implied) to target.
+About half of the articles (`r sum(all_reviews$audience_discipline == 'broad', na.rm=TRUE)`/`r sum(all_reviews$keep)`) were written for the broad community of data science educators.
+The remaining articles were written for educators in particular disciplines, most commonly computer science (`r sum(all_reviews$audience_discipline == 'computer science', na.rm=TRUE)` publications), statistics (`r sum(all_reviews$audience_discipline == 'statistics', na.rm=TRUE)` publications), and information sciences (`r sum(all_reviews$audience_discipline == 'information technology', na.rm=TRUE) + sum(all_reviews$audience_discipline == 'information science', na.rm=TRUE) + sum(all_reviews$audience_discipline == 'informatics', na.rm=TRUE)` publications).
+We found that publication venues in all of these disciplines, as well as engineering, contributed articles aimed at their specific audience as well as articles aimed at the broad community of data science educators.
 
 ```{r}
 #| echo: false
@@ -122,120 +386,260 @@ n_qual <- nrow(all_reviews |>
                  filter(data_collection_type == "qual"))
 n_mixed <- nrow(all_reviews |>
                   filter(data_collection_type == "mixed"))
-
-tab <- table(all_reviews$main_field)
 ```
 
-The majority of publications analyzed were either multidisciplinary (`r as.numeric(tab['multidisciplinary'])` of `r sum(all_reviews$keep)` articles), treated data science as the field of study or program itself, rather than a topic in another field (`r as.numeric(tab['data science'])` publications), or were about computer science departments or programs (`r as.numeric(tab['computer science'])` publications).
-The next most prevalent discipline was statistics, which `r words(as.numeric(tab['statistics']))` publications were focused on.
-
-Most publications (`r sum(all_reviews$keep) - nrow(data_no_rq) - nrow(rq_no_data)` of `r sum(all_reviews$keep)` reviewed) either posed research questions *and* collected data or did neither, although there were exceptions.
+\textbf{Research Question and Data Collection.} Most publications (`r sum(all_reviews$keep) - nrow(data_no_rq) - nrow(rq_no_data)` of `r sum(all_reviews$keep)` reviewed) either posed research questions *and* collected data or did neither, although there were exceptions.
 `r Words(nrow(rq_no_data))` publications had research questions but no data collected [@vance2022; @pieterman-bos2023; @hagen2020; @robeva2020].
-On the other hand, `r words(nrow(data_no_rq))` publications collected data but did not pose a specific research question or study goal [@hicks2018; @rao2018; @liu2020].
+On the other hand, `r words(nrow(data_no_rq))` publications collected data but did not pose a specific research question or study goal [@hicks2018; @rao2018; @liu2020; @cuadrado-gallego2021].
 Of the `r n_quant + n_qual + n_mixed` publications that included collected data, `r n_quant`, `r n_qual`, and `r n_mixed` publications had qualitative, quantitative, and mixed data respectively.
-In Table 3 of Supplementary Materials, we provide a breakdown of data collection types and the presence of research questions by discipline.
 
-```{r table-research_question}
+```{r}
 #| echo: false
-#| label: tbl-rq
-#| tbl-cap: Number of articles with communicated research questions and with collected data by content area.  
-research.question <- all_reviews |> 
-  filter(!is.na(content_area)) |>
-  mutate(research_question = as.logical(research_question)) |>
-  mutate(qual_data = data_collection_type == "qual") |> 
-  mutate(quant_data = data_collection_type == "quant") |> 
-  mutate(mixed_data = data_collection_type == "mixed") |>
-  mutate(any_data = data_collection_type %in% c("qual", "quant", "mixed")) |> 
-  group_by(content_area) |> 
-  summarize(Total = n(),
-            With_research_question = sum(research_question, na.rm = TRUE),
-            Without_research_question = sum(!research_question, na.rm = TRUE),
-            With_any_data = sum(!any_data, na.rm = TRUE),
-            With_qual_data = sum(qual_data, na.rm = TRUE), 
-            With_quant_data = sum(quant_data, na.rm = TRUE),
-            With_mixed_data = sum(mixed_data, na.rm = TRUE))
+#| message: false
+#| fig-width: 8.5
+#| fig-height: 5
+#| label: fig-publication-focus
+#| fig-cap: Number of publications with communicated research questions and with collected data stratified by publication focus. 
 
-expanded.contents <- strsplit(as.character(research.question$content_area), " and ")
+kept_reviews <- all_reviews |> 
+  filter(keep == TRUE) |> 
+  select(
+    content_area_double = content_area, 
+    research_question, 
+    data_collection_type
+  )
 
-lens <- map(expanded.contents, length)
+#Separate out `content_area` double coding
 
-rq.df <- research.question[rep(seq_len(nrow(research.question)), lens), ]
+content_area_order <- rev(c(
+  "review of current state of data science education",
+  "guidelines",
+  "program example",
+  "course example",
+  "class activity example",
+  "extracurricular activity example",
+  "education technology",
+  "pedagogical approach",
+  "call to action"
+))
 
-rq.df$content_area <- unlist(expanded.contents) 
+content_area_order_display <- rev(c(
+  " Review of Current State      \nof Data Science Education     ",
+  "        Guidelines            ",
+  "     Program Example          ",
+  "     Course Example           ",
+  " Class Activity Example       ",
+  "   Extracurricular      \n     Activity Example         ",
+  "   Education Technology       ",
+  "   Pedagogical Approach       ",
+  "      Call to Action               "
+))
 
-rq.df |>   mutate(content_area = str_to_title(content_area)) |> 
-  group_by(content_area) |>
-  summarize(With_research_question = sum(With_research_question), 
-            Without_research_question = sum(Without_research_question), 
-            With_qual_data = sum(With_qual_data), 
-            With_quant_data = sum(With_quant_data),
-            With_mixed_data = sum(With_mixed_data),
-            With_no_data = sum(With_any_data),
-            Total = sum(Total)) |>
-  arrange(desc(Total)) |>
-  kable(
-    booktabs = "TRUE",
-    col.names = c(
-      "Content Area", 
-      "With",
-      "Without ",
-      "Qual",
-      "Quant",
-      "Mixed",
-      "None",
-      "Total"
-    )) |> 
-  kable_styling(latex_options = "striped") |> 
-  add_header_above(c(" " = 1, "Research Question" = 2, "Collected data" = 4, " " = 1)) |> 
-  column_spec(1, width = "13em") |> 
-  footnote(general = "Some publications were classified as falling under multiple content areas.")
+content_areas <- str_split_fixed(
+  kept_reviews$content_area_double, 
+  pattern = " and ", 
+  n = 2
+)
+
+kept_reviews_separated <- kept_reviews |> 
+  mutate( 
+    content_area1 = content_areas[, 1],
+    content_area2 = content_areas[, 2]
+  ) |> 
+  pivot_longer(
+    cols = c(content_area1, content_area2),
+    values_to = "content_area"
+  ) |> 
+  select(-name, -content_area_double) |> 
+  filter(content_area != "") |> 
+  mutate(content_area = factor(
+    content_area, 
+    levels = rev(content_area_order)
+  )) |> 
+  mutate(data_collection_type = factor(
+    data_collection_type,
+    levels = rev(c("no data", "qual", "mixed", "quant")),
+    labels = rev(c("None", "Qualitative", "Mixed", "Quantitative"))
+  )) |> 
+  mutate(research_question = factor(
+    research_question,
+    levels = rev(c(FALSE, TRUE)),
+    labels = rev(c("No", "Yes"))
+  ))
+
+# Plot
+
+content_by_research_plot <- kept_reviews_separated |> 
+  group_by(content_area, research_question) |> 
+  summarise(group_total = n()) |> 
+  mutate(broad_area = case_when(
+    content_area %in% c("review of current state of data science education", "guidelines") ~ "area1",
+    content_area %in% c("program example", "course example") ~ "area2",
+    content_area %in% c("class activity example",
+  "extracurricular activity example") ~ "area3",
+    content_area %in% c("education technology") ~ "area4",
+    content_area %in% c("pedagogical approach") ~ "area5",
+    content_area %in% c("call to action") ~ "area6",
+    .default = "broad_area_error"
+  )) |> 
+  mutate(content_area = factor(
+    content_area, 
+    levels = content_area_order, 
+    labels = content_area_order_display
+  )) |> 
+ggplot(aes(y = content_area, x = group_total, fill = research_question)) +
+ geom_col(color = "white") +
+ geom_text(aes(label = group_total), position = position_stack(vjust = 0.5)) +
+  labs(
+    x = "# Publications",
+    fill = "Had Research Question"
+  ) +
+  theme_classic() +
+  theme(
+    legend.justification = "center",
+    legend.position='bottom',
+    #legend.margin = margin(0, 0, 0, 0),
+    #legend.location = "plot",
+    axis.text.y = element_blank(),
+    axis.title.y = element_blank(),
+    plot.margin = unit(c(5, 0, 5, 5), "pt"),
+    strip.background = element_blank(),
+    strip.text.y = element_blank()
+  ) +
+  xlim(19, 0) +
+  scale_y_discrete(position = "right") + 
+  guides(fill = guide_legend(
+    title.position = "top", 
+    #nrow = 2
+    title.hjust = 0.5, 
+  )) +
+  scale_fill_manual(
+    breaks = c("No", "Yes"), 
+    values = c("#BE2102FF", "#1FC8DEFF")
+  ) +
+  facet_grid(
+    broad_area ~ ., 
+    scales = "free_y", 
+    space = "free_y"
+  )
+
+content_by_data_plot <- kept_reviews_separated |> 
+  group_by(content_area, data_collection_type) |> 
+  summarise(group_total = n()) |> 
+  mutate(broad_area = case_when(
+    content_area %in% c("review of current state of data science education", "guidelines") ~ "area1",
+    content_area %in% c("program example", "course example") ~ "area2",
+    content_area %in% c("class activity example",
+  "extracurricular activity example") ~ "area3",
+    content_area %in% c("education technology") ~ "area4",
+    content_area %in% c("pedagogical approach") ~ "area5",
+    content_area %in% c("call to action") ~ "area6",
+    .default = "broad_area_error"
+  )) |> 
+  mutate(content_area = factor(
+    content_area, 
+    levels = content_area_order, 
+    labels = content_area_order_display
+  )) |> 
+ggplot(aes(y = content_area, x = group_total, fill = data_collection_type)) +
+ geom_col(color = "white") +
+ geom_text(aes(label = group_total), position = position_stack(vjust = 0.5)) +
+  labs(
+    x = "# Publications",
+    y = "",
+    fill = "Data Collection Type"
+  ) +
+  theme_classic() +
+  theme(
+    legend.justification = "center",
+    legend.position = 'bottom',
+    #legend.margin = margin(0, 0, 0, 0),
+    #legend.location = "plot",
+    axis.text.y = element_text(hjust = 0.5, vjust = 0.5),
+    plot.margin = unit(c(5, 5, 5, 0), "pt"),
+    strip.background = element_blank(),
+    strip.text.y = element_blank()
+    ) +
+  scale_y_discrete() +
+  guides(fill = guide_legend(
+    title.position = "top", 
+    title.hjust = 0.5, 
+    #nrow = 2, 
+    theme = theme(legend.byrow = TRUE)
+  )) +
+  scale_fill_manual(
+    breaks = c("None", "Qualitative", "Mixed", "Quantitative"), 
+    values = c("#EA4F0DFF", "#4490FEFF", "#29EFA2FF", "#C1F334FF")
+  ) +
+  facet_grid(
+    broad_area ~ ., 
+    scales = "free_y", 
+    space = "free_y"
+  )
+
+# Used virdis package to get distinct color-blind friendly colors
+# scales::show_col(viridis::viridis_pal(option = "turbo")(12))
+# Need to choose from below vector
+# Black font needs to show on color
+#c("#4454C4FF", "#4490FEFF", "#1FC8DEFF", "#29EFA2FF", "#7DFF56FF", "#C1F334FF", "#F1CA3AFF", "#FE922AFF", "#EA4F0DFF", "#BE2102FF")
+
+# Print final plot
+egg::ggarrange(
+  content_by_research_plot, 
+  content_by_data_plot, 
+  ncol = 2
+)  
+
 ```
 
-We also classified the publications based on their content area.
+\textbf{Publication focus.} We also classified publications based on their focus.
 We found publications that reviewed the current state of data science education and provided guidelines.
-We also encountered publications that provided program, course, class activity, and extra curricular activity examples.
-Some publications specifically focused on educational technology or a pedagogical approach.
-We also defined a content category "call to action".
-While many publications had a call to action with recommendations on improving data science education, we reserved the content category "call to action" for publications that solely made a call to action, without content falling into other content areas (e.g., education technology or course example).
-Some publications included more than one content area and in such cases we noted down all the content areas that the publication falls into.
-For each content area, @tbl-rq shows how many publications featured that content area in a descending order, had a research question and included qualitative, quantitative or mixed type of data.
-In the remainder of this section, we highlight some contributions from each content area.
+We also encountered publications that provided examples of programs, courses, class activities, and extracurricular activities.
+Some publications specifically focused on educational technology or discussed a pedagogical approach.
+Some publications included more than one focus: in such cases, we noted down all the categories that the publication falls into, with the exception of *call to action*.
+Almost all publications we read were calling the scientific community to action and this is unsurprising for scientific publications.
+For instance, an educational technology paper might call to action to use a specific tool and a pedagogy paper might call to action to use a specific pedagogical approach.
+However, some publications solely made a call to action, without content falling into other publication focuses (e.g., education technology or course example).
+For these publications, we reserved the publication focus "call to action", that is, papers that we labeled in the "call to action" category did not fall in any other category for publication focus.
+
+For each category of publication focus, @fig-publication-focus shows how many publications featured that publication focus, had a research question and included qualitative, quantitative or mixed type of data.
+Note that, in this figure, publication focuses are arranged and grouped to match the order in which we are going to illustrate them below, as we highlight contributions from each publication focus.
 
 Similar to what we are doing in our study, many scholars wanted to understand the **current state of data science education**.
 Many of the studies conducted wanted to understand and evaluate data science programs [@wiktorski2016; @oliver2021; @song2016; @shao2021; @li2021; @raj2019] or curricula [@schmitt2023].
 @davis2020 specifically looked at the current state of ethics in undergraduate data science education and @ceccucci2015 considered data science education from a scientific literacy perspective.
-Also among these reviews were comparative studies: for instance @bilehassan2020's comparison of informatics and data science programs.
-Some studies also compared differences of data science approaches at country or regional levels such in Japan [@takemura2018] or in Middle Eastern countries [@zakaria2023].
+Among these reviews, there were also comparative studies: for instance, @bilehassan2020's comparison of informatics and data science programs.
+Some studies also compared differences of data science approaches at country or regional levels such as in Japan [@takemura2018], or in Middle Eastern countries [@zakaria2023].
 In understanding the current state of data science education, scholars also wanted to understand the data science practice.
-For instance, @belloum2019 developed semi-automated methods to determine the competencies needed in the job-market and @kross2019 focused on understanding the skills that data science practitioners who also teach data science in various settings pass on to their students.
-In addition to understanding data science education, scholars also provided **guidelines** for data science degrees [@blair2021].
+For example, @belloum2019 developed semi-automated methods to determine the competencies needed in the job-market and @kross2019 focused on understanding the skills that data science practitioners who teach data science in various settings pass onto their students.
+In addition to reviewing data science education, scholars also provided **guidelines** for data science degrees [@blair2021].
 
 We found multiple data science **program examples**, including but not limited to general data science programs [e.g., @demchenko2017; @demchenko2019; @kakeshita2022].
 Some publications were about data science education in specific programs such as computer science education [@bilehassan2020], microbiology [@dill-mcfarland2021], information schools [@song2017; @hagen2020] and business [@miah2020].
 Less traditional programs were also featured, such as the Data Mine which takes on data science education in a residential community of students [@betz2020].
 
 The literature we read also included many **course examples** with some clever ways of including data science concepts in different courses.
-For instance, @fisler2022 suggest including data science and data structures in an introductory computing course, @rao2019 teach data science through use of education data in their engineering course on modern technologies, and @haynes2019 teach data science in a general education IT course.
+For instance, @fisler2022 suggested to include data science and data structures in an introductory computing course, @rao2019 teach data science through the use of education data in their engineering course on modern technologies, and @haynes2019 teach data science in a general education IT course.
 Some institutions developed data science courses for specific disciplines including information schools [@hagen2020] and medicine [@doudesis2022].
-Some scholars also describe courses that merge data science with philosophy of science [@pieterman-bos2023] or with humanities perspectives [@vance2022].
+Some scholars also described courses that merge data science with philosophy of science [@pieterman-bos2023] or with humanities perspectives [@vance2022].
 Last but not least, data science educators also tried to provide real-life data science experiences through work-integrated learning [@bilgin2022], capstone projects [@allen2021] and entirely case-study based courses [@hicks2018].
 
 Similar to program examples and course examples provided in the literature, some publications focused on activity examples.
-Among **class activity examples**, @yamamoto2021 develop a programming exercise to bring higher-order tensor content to undergraduate level by using a 3-D puzzle.
-Another example is by @banadaki2022 who develop different activities that include applications of data science in Mechanical Engineering, Biomedical science, Quantum Physics, and Cybersecurity.
+Among **class activity examples**, @yamamoto2021 developed a programming exercise to bring higher-order tensor content to undergraduate level by using a 3-D puzzle.
+Another example is by @banadaki2022 who developed different activities that include applications of data science in Mechanical Engineering, Biomedical science, Quantum Physics, and Cybersecurity.
 In data science education, there is also room for learning outside the classroom as an **extra-curricular activity**.
-This can include data hackathons [@anslow2016].
+This included data hackathons [@anslow2016].
 
 In terms of **education technology**, as much of data science education tackles with issues such as computing power, storage of large datasets, and sometimes automation, some of these publications focused on cloud-based data science platforms for teaching purposes [e.g., @demchenko2017].
-Many others focused on other tools such as online platforms, learning environments, and apps that support learning data science [e.g., @hoyt2018; @bornschlegl2016; @liu2020; @nair2020].
+Many others focused on tools such as online platforms, learning environments, and apps that support learning data science [e.g., @hoyt2018; @bornschlegl2016; @liu2020; @nair2020].
 
 Studies that focused on **pedagogical approaches** were also frequently encountered.
 These studies focused on various subtopics including team-based learning [e.g., @vance2022], project-based learning [e.g., @mike2020] and large-scale product development which has both project- and team-based learning aspects [e.g., @bhavya2020].
 Scholars also studied social topics such as ethics and equity in the data science classroom [@alexander2022] and student self-regulation [@zhang2020].
 
 Almost all publications we read were calling the scientific community to action.
-For instance, @davis2020 **call the community to action** in inclusion of ethics in undergraduate data science education but they do this through systematic review.
-On the other hand, we encountered publications with an important message to data science education but without a review of programs, courses, activities etc.
-For instance, @robeva2020 argue for the inclusion of data science in quantitative biology education.
-@engel2017 draw attention to the importance of statistical literacy in data science education.
+For instance, through a systematic review, @davis2020 **called the community to action** to include ethics in undergraduate data science education.
+We also encountered publications with an important message about data science education but without a review of programs, courses, activities etc.
+For instance, @robeva2020 argued for the inclusion of data science in quantitative biology education.
+@engel2017 drew attention to the importance of statistical literacy in data science education.
 We have also seen a to-do list (i.e., action list) for the community including starting a multidisciplinary data science education journal [@hazzan2021], building a consensus on data science education and curricula [@dinov2019], developing and deploying degree programs for university students, having basic data science training for university students, and training instructors to teach data science [@bonnell2022].

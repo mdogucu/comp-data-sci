@@ -1,4 +1,8 @@
-## Database Extraction Instructions
+## Datasets
+
+So far in this folder there is one dataset for each database labeled with the database name e.g. `scopus.csv`.  
+
+When extracting information from a database 
 
 - Make sure that you search "data science education" in quotes. It should appear in title OR abstract OR keywords. 
 
@@ -12,7 +16,7 @@
 
 ---
 
-Any human decisions that needed to be made on a per-database basis are listed below:
+Take notes in this section any human decisions involved that can potentially go into the methods section of the manuscript.
 
 - on Web of Science topic search was conducted. It states "Searches title, abstract, author keywords, and Keywords Plus."
 

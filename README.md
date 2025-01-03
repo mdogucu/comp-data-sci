@@ -1,4 +1,4 @@
-## Undergraduate data science education: Who has the microphone and what are they saying?
+## A Systematic Literature Review of Undergraduate Data Science Education Research
 
 [Mine Dogucu](https://minedogucu.com)  
 [Sinem Demirci](https://sinemdemirci.github.io/)  
@@ -8,9 +8,8 @@
 
 To cite this preprint:
 
-Dogucu, M., Demirci, S., Bendekgey, H., Ricci, F. Z., & Medina, C. M. (2024). Undergraduate data science education: Who has the microphone and what are they saying?. arXiv preprint arXiv:2403.03387.
+XXXX
 
 ### Abstract 
 
-The presence of data science has been profound in the scientific community in almost every discipline. An important part of the data science education expansion has been at the undergraduate level. We conducted a systematic literature review to (1) specify current evidence and knowledge gaps in undergraduate data science education and (2) inform policymakers and data science educators/practitioners about the present status of data science education research. The majority of the publications in data science education that met our search criteria were available open-access. Our results indicate that data science education research lacks empirical data and reproducibility. Not all disciplines contribute equally to the field of data science education. Computer science and data science as a separate field emerge as the leading contributors to the literature. In contrast, fields such as statistics, mathematics, as well as other fields closely related to data science exhibit a limited presence in studies. We recommend that federal agencies and researchers 1) invest in empirical data science education research; 2) diversify research efforts to enrich the spectrum of types of studies; 3) encourage scholars in key data science fields that are currently underrepresented in the literature to contribute more to research and publications.
-
+The presence of data science has been profound in the scientific community in almost every discipline. An important part of the data science education expansion has been at the undergraduate level. We conducted a systematic literature review to (1) portray current evidence and knowledge gaps in self-proclaimed undergraduate data science education research and (2) inform policymakers and the data science education community about what educators may encounter when searching for literature using the general keyword 'data science education.' While open-access publications that target a broader audience of data science educators and include multiple examples of data science programs and courses are a strength, significant knowledge gaps remain. The undergraduate data science literature that we identified often lacks empirical data, research questions and reproducibility. Certain disciplines are less visible. We recommend that we should (1) cherish data science as an interdisciplinary field; (2) adopt a consistent set of keywords/terminology to ensure data science education literature is easily identifiable; (3) prioritize investments in empirical studies.
