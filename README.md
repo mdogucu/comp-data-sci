@@ -8,7 +8,7 @@
 
 To cite this preprint:
 
-XXXX
+Dogucu, M., Demirci, S., Bendekgey, H., Ricci, F. Z., & Medina, C. M. (2024). A Systematic Literature Review of Undergraduate Data Science Education Research. arXiv preprint arXiv:2403.03387.
 
 ### Abstract 
 
