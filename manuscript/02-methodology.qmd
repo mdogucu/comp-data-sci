@@ -43,7 +43,7 @@ why_not_keep <- all_reviews |>
 # - not about data science education
 # - k-12
 # - not a journal/conference/magazine article or book chapter
-# - other non-undergraduate focused data science education (e.g. for practitioners)
+# - other non-undergraduate focused data science education (e.g., for practitioners)
 why_not_keep <- why_not_keep |> 
   mutate(
     reason = case_when(
@@ -191,19 +191,19 @@ excluded <- data.frame(
 ```
 
 Across both stages, we excluded `r excluded$n_docs_excluded_format` publications due to formatting (which included posters, panels, letters to journal editors and meeting highlights).
-Of the remaining `r excluded$n_docs_reviewed - excluded$n_docs_excluded_format` publications, `r excluded$n_docs_excluded_content` were excluded due to their content: `r excluded$n_not_ds_ed` of them were not about data science education (including e.g. publications focused on data science methodology) and `r excluded$n_docs_excluded_content - excluded$n_not_ds_ed` of them focused exclusively on a different level of education than undergraduate.
-Among the latter excluded group, `r excluded$n_docs_graduate` publications focused on graduate level, `r excluded$n_docs_k_12` focused on K-12, middle school or high school and `r excluded$n_docs_non_academic` publications focused on data science education for adults in non-academic programs (including, e.g. practitioners, citizen science and instructors).
+Of the remaining `r excluded$n_docs_reviewed - excluded$n_docs_excluded_format` publications, `r excluded$n_docs_excluded_content` were excluded due to their content: `r excluded$n_not_ds_ed` of them were not about data science education (including e.g., publications focused on data science methodology) and `r excluded$n_docs_excluded_content - excluded$n_not_ds_ed` of them focused exclusively on a different level of education than undergraduate.
+Among the latter excluded group, `r excluded$n_docs_graduate` publications focused on graduate level, `r excluded$n_docs_k_12` focused on K-12, middle school or high school and `r excluded$n_docs_non_academic` publications focused on data science education for adults in non-academic programs (including, e.g., practitioners, citizen science and instructors).
 Publications that focused on both undergraduate and non-undergraduate levels were included.
-Of the remaining `r excluded$n_docs_reviewed - excluded$n_docs_excluded_format - excluded$n_docs_excluded_content` publications, other `r excluded$n_other` were excluded due to being: not written in English; duplicated in our dataset; retracted by their authors.
+Of the remaining `r excluded$n_docs_reviewed - excluded$n_docs_excluded_format - excluded$n_docs_excluded_content` publications, another `r excluded$n_other` were excluded due to being: not written in English; duplicated in our dataset; retracted by their authors.
 
 After excluding publications for the reasons detailed above, we were left with `r excluded$n_docs_kept` publications, which we analyzed in-depth.
-In addition to the variables extracted from databases (e.g. title of the publication, author names, etc.) for each publication we collected data on:
+In addition to the variables extracted from databases (e.g., title of the publication, author names, etc.) for each publication we collected data on:
 
 -   affiliation country of researchers
 
 <!-- -->
 
--   open access status (i.e. whether the full publication is accessible for free from a Google Scholar search)
+-   open access status (i.e., whether the full publication is accessible for free from a Google Scholar search)
 
 -   year when the publication was first published online
 
@@ -215,9 +215,9 @@ In addition to the variables extracted from databases (e.g. title of the publica
 
 -   publication focus, that is a categorization of the subject matter of the publication (for example "pedagogical approach", "class activity" or "review of current state of data science education")
 
--   discipline of the publishing source, determined by examining the call for contributions of the journal or conference, or the description of the book or magazine ("broad" when the publishing source called for contributions across all data science fields, otherwise a specific sub-field of data science, e.g. "computer science" or "statistics")
+-   discipline of the publishing source, determined by examining the call for contributions of the journal or conference, or the description of the book or magazine ("broad" when the publishing source called for contributions across all data science fields, otherwise a specific sub-field of data science, e.g., "computer science" or "statistics")
 
--   the discipline of the target audience, as expressed by the authors in the publication ("broad" when the publication target were all data science educators, otherwise a specific sub-field of data science, e.g. "computer science" or "statistics")
+-   the discipline of the target audience, as expressed by the authors in the publication ("broad" when the publication target were all data science educators, otherwise a specific sub-field of data science, e.g., "computer science" or "statistics")
 
 ```{=html}
 <!--

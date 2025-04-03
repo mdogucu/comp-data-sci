@@ -246,7 +246,7 @@ We speculate that the absence of critical information about research designs, su
 This makes it challenging to replicate or modify research, impeding the identification of recurring patterns.
 
 Lack of reproducibility is not unique to data science education research.
-Its importance and lack thereof have been discussed in many disciplines including physics [@junk2020], economics [@chang], and psychology [@opensciencecollaboration2015].
+Importance of reproducibility and lack thereof have been discussed in many disciplines including physics [@junk2020], economics [@chang], and psychology [@opensciencecollaboration2015].
 In recent years, this has even been referred to as the *reproducibility crisis*.
 
 Potential explanations for the lack of reproducibility in data science education research might be similar to reasons seen in the broader science community.
@@ -271,10 +271,10 @@ Considering the findings and our arguments, we present three recommendations for
 Despite the existence of other key fields offering data science courses at the undergraduate level, there is a noticeable gap in studies reflecting their perspectives in data science education.
 To address this gap, it is imperative for undergraduate data science education studies to incorporate the viewpoints of scholars from foundational disciplines such as statistics, mathematics, and other application domains intersecting with data science education practices.
 We need to encourage scholars in all data science fields to maintain their visibility and contribute more to publications.
-We posit that future endeavors in this direction will significantly enhance our understanding of the strengths and needs in undergraduate data science education.
+We posit that future endeavors in this direction will substantially enhance our understanding of the strengths and needs in undergraduate data science education.
 
 As statistics community, we must take an active role in expanding the data science education research and other opportunities.
-For instance, despite having Guidelines for Assessment and Instruction in Statistics Education (GAISE) [-@GAISE2016] and Curriculum Guidelines for Undergraduate Programs in Statistical Science (CGUPSS) [-@asacurricula], ASA has not yet written any guidelines specific to data science education.
+For instance, despite having Guidelines for Assessment and Instruction in Statistics Education (GAISE) College Report [-@GAISE2016] and Curriculum Guidelines for Undergraduate Programs in Statistical Science (CGUPSS) [-@asacurricula], ASA has not yet written any guidelines specific to data science education.
 However, ASA Board of Directors endorsed the Park City Math Institute report [@de2017curriculum] and have provided input on the criteria for the data science program ABET accreditation [@liu2022].
 At the time of writing of this manuscript, ASA is working to update GAISE.
 Further efforts by ASA similar to GAISE and CGUPSS or newer versions of these documents can also help distinguish statistics and data science programs and courses.
@@ -284,6 +284,7 @@ Speculatively, it appears that the keyword "data science education" is more comm
 As a result, a researcher broadly interested in data science education may not see the interdisciplinary diversity of insights within the field, if there is a lack of consistent use of keywords and terminology.
 
 We believe that using both broad, cross-disciplinary terms and specialized terminology unique to each field/domain is essential for facilitating communication within individual disciplines/domains and across the wider data science community.
+One way this can possibly be achieved is by using "data science education" as a keyword across different disciplines while also specifying discipline such as "nursing", "sociology", etc.
 Adopting a consistent set of keywords does not require a shared definition of what is and is not data science.
 If a set of keywords is consistently used by data science education researchers, it may facilitate the accumulation of collective knowledge and help identify what works or does not in the field.
 Therefore, it is important to standardize terminology to enhance the accessibility and comprehensiveness of the data science education literature.
@@ -302,7 +303,7 @@ Scientific studies are an integral part of reviewing existing practices as well 
 Therefore, we should diversify our research efforts by investing in more empirical studies and fostering scholars from key fields in data science, especially in statistics and domain sciences.
 
 Further research studies may improve or try to replicate the findings of this study in multiple ways by utilizing different keywords, databases, and languages.
-An even larger endeavor can be taken if investigators want to work off on a definition of data science utilizing a systematic literature review.
+An even larger endeavor can be undertaken if investigators want to work off on a definition of data science utilizing a systematic literature review.
 
 Lastly, we also believe that the data collected as part of this study can help novice researchers in data science education find inspiration and examples from the existing literature.
 We presented findings of the study at the \ecots{} where we had participants design their own research study by grouping them according to their publication focus (e.g., educational technology) of interest.
