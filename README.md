@@ -8,7 +8,7 @@
 
 To cite this manuscript:
 
-Dogucu, M., Demirci, S., Bendekgey, H., Ricci, F. Z., & Medina, C. M. (2025). A Systematic Literature Review of Undergraduate Data Science Education Research. Journal of Statistics and Data Science Education, 1–20. [https://doi.org/10.1080/26939169.2025.2486656](Dogucu, M., Demirci, S., Bendekgey, H., Ricci, F. Z., & Medina, C. M. (2025). A Systematic Literature Review of Undergraduate Data Science Education Research. Journal of Statistics and Data Science Education, 1–20. https://doi.org/10.1080/26939169.2025.2486656)
+Dogucu, M., Demirci, S., Bendekgey, H., Ricci, F. Z., & Medina, C. M. (2025). A Systematic Literature Review of Undergraduate Data Science Education Research. Journal of Statistics and Data Science Education, 1–20. [https://doi.org/10.1080/26939169.2025.2486656](https://doi.org/10.1080/26939169.2025.2486656)
 
 ### Abstract 
 
